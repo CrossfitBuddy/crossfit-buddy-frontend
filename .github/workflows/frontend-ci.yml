@@ -1,0 +1,22 @@
+name: Frontend CI
+
+on:
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  test-and-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Nodejs
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Set up dependencies
+        run: npm ci
+      - name: Test & Lint
+        run: |
+          npm test
+          npm run lint
