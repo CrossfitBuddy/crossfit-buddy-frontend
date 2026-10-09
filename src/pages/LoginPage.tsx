@@ -1,5 +1,6 @@
 import { LockOutlined, MailOutlined } from '@ant-design/icons'
 import { Button, Form, Input } from 'antd'
+import { Link } from 'react-router-dom'
 
 type LoginValues = {
   email: string
@@ -24,7 +25,7 @@ export function LoginPage() {
           <Input.Password prefix={<LockOutlined />} placeholder="Пароль" autoComplete="current-password" />
         </Form.Item>
         <Button type="primary" htmlType="submit" block size="large">Продолжить</Button>
-        <Button type="link" block className="mt-2 !text-stone-300">Забыли пароль?</Button>
+        <p className="mt-4 text-center"><Link to="/forgot-password" className="text-stone-300">Забыли пароль?</Link></p>
       </Form>
     </main>
   )
