@@ -8,25 +8,33 @@ type ForgotPasswordValues = {
 }
 
 export function ForgotPasswordPage() {
-  const [codeSent, setCodeSent] = useState(false)
+  const [sentEmail, setSentEmail] = useState<string | null>(null)
 
-  const submit = () => {
-    setCodeSent(true)
+  const submit = (values: ForgotPasswordValues) => {
+    setSentEmail(values.email)
   }
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center bg-[#101914] px-6 py-10 text-white">
-      <p className="text-sm font-bold uppercase tracking-[0.24em] text-lime-400">CrossfitBuddy</p>
+      <p className="text-sm font-bold text-lime-400">CrossfitBuddy</p>
       <h1 className="mt-3 text-4xl font-black">Восстановление пароля</h1>
 
-      {codeSent && <Alert type="success" showIcon title="Код отправлен" className="mt-6" />}
+      {sentEmail && (
+        <div className="mt-6" role="status">
+          <Alert
+            type="success"
+            showIcon
+            title={<>Код успешно отправлен на: <span className="break-all">{sentEmail}</span></>}
+          />
+        </div>
+      )}
 
       <div className="mt-6">
         <Form<ForgotPasswordValues>
           layout="vertical"
           requiredMark={false}
           onFinish={submit}
-          onValuesChange={() => setCodeSent(false)}
+          onValuesChange={() => setSentEmail(null)}
         >
           <Form.Item
             name="email"
