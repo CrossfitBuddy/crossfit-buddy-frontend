@@ -11,4 +11,6 @@ Ant Design используется для доступных интеракти
 3. Скопировать `.env.example` в `.env` и при необходимости изменить API URL.
 4. Запустить `npm run dev`.
 
+Клиент API генерируется по OpenAPI-схеме запущенного бэкенда (`http://localhost:8080/v3/api-docs`): `npm run generate:api`. Запросы идут на `VITE_API_URL`. Если в `localStorage` есть `accessToken`, он уходит заголовком `Authorization: Bearer`.
+
 Перед реализацией экранов синхронизируйте компоненты и токены с актуальным макетом Figma v1.3.
