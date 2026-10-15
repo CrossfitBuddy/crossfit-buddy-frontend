@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { ProfilePage } from '../../pages/ProfilePage'
@@ -14,7 +14,7 @@ function setup(overrides: Partial<ProfileApi> = {}) {
 }
 
 async function edit(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(await screen.findByRole('button', { name: 'Изменить' }))
+  await user.click(await screen.findByRole('button', { name: 'Редактировать профиль' }))
   await screen.findByLabelText('Имя')
 }
 
@@ -133,5 +133,69 @@ describe('Профиль', () => {
     await edit(user)
     expect(screen.getByLabelText('Стаж, лет')).toHaveValue('4')
     expect(screen.queryByLabelText('Рост, см')).not.toBeInTheDocument()
+  })
+  it('подсвечивает будущую дату рождения и не отправляет форму', async () => {
+    const updateProfile = vi.fn()
+    const { user } = setup({ updateProfile })
+    await edit(user)
+    fireEvent.change(screen.getByLabelText('Дата рождения'), { target: { value: '2999-01-01' } })
+    await user.click(screen.getByRole('button', { name: 'Сохранить' }))
+    expect(await screen.findByText('Введите корректную дату не позже сегодняшней')).toBeInTheDocument()
+    expect(screen.getByLabelText('Дата рождения')).toHaveAttribute('aria-invalid', 'true')
+    expect(updateProfile).not.toHaveBeenCalled()
+  })
+
+  it('проверяет верхние границы роста, веса и точность веса', async () => {
+    const updateProfile = vi.fn()
+    const { user } = setup({ updateProfile })
+    await edit(user)
+    await user.clear(screen.getByLabelText('Рост, см'))
+    await user.type(screen.getByLabelText('Рост, см'), '2147483648')
+    await user.clear(screen.getByLabelText('Вес, кг'))
+    await user.type(screen.getByLabelText('Вес, кг'), '10000')
+    await user.click(screen.getByRole('button', { name: 'Сохранить' }))
+    expect(await screen.findAllByText('Слишком большое значение')).toHaveLength(2)
+    await user.clear(screen.getByLabelText('Вес, кг'))
+    await user.type(screen.getByLabelText('Вес, кг'), '78,123')
+    await user.click(screen.getByRole('button', { name: 'Сохранить' }))
+    expect(await screen.findByText('Не более двух знаков после запятой')).toBeInTheDocument()
+    expect(updateProfile).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['-1', 'Введите число не меньше нуля'],
+    ['1.5', 'Введите целое число'],
+    ['2147483648', 'Слишком большое значение'],
+  ])('не сохраняет недопустимый стаж %s', async (value, message) => {
+    const updateProfile = vi.fn()
+    const { user } = setup({
+      getProfile: async () => ({ ...initialProfile, activeRole: 'TRAINER' }),
+      updateProfile,
+    })
+    await edit(user)
+    await user.clear(screen.getByLabelText('Стаж, лет'))
+    await user.type(screen.getByLabelText('Стаж, лет'), value)
+    await user.click(screen.getByRole('button', { name: 'Сохранить' }))
+    expect(await screen.findByText(message)).toBeInTheDocument()
+    expect(updateProfile).not.toHaveBeenCalled()
+  })
+
+  it('разрешает тренеру нулевой стаж и сохраняет его', async () => {
+    const mock = createMockProfileApi({ delay: 0 })
+    const updateProfile = vi.fn(mock.updateProfile)
+    const { user } = setup({
+      ...mock,
+      getProfile: async () => { await mock.switchRole('TRAINER'); return mock.getProfile() },
+      updateProfile,
+    })
+    await edit(user)
+    await user.clear(screen.getByLabelText('Стаж, лет'))
+    await user.type(screen.getByLabelText('Стаж, лет'), '0')
+    await user.click(screen.getByRole('button', { name: 'Сохранить' }))
+    expect(await screen.findByText('0 лет')).toBeInTheDocument()
+    expect(updateProfile).toHaveBeenCalledTimes(1)
+    expect(updateProfile.mock.calls[0][0]).toMatchObject({ trainerProfile: { experienceYears: 0 } })
+    expect(updateProfile.mock.calls[0][0]).not.toHaveProperty('athleteProfile')
+    expect(updateProfile.mock.calls[0][0]).not.toHaveProperty('avatarKey')
   })
 })

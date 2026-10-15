@@ -1,6 +1,5 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { createMockProfileApi, initialProfile } from './mockProfileApi'
-import { createMockAvatar, getAvatarUrl, releaseMockAvatar } from './mockAvatars'
 import { isValidBirthDate, toFormValues, toUpdateRequest } from './profileValues'
 
 describe('Контракт mock-профиля', () => {
@@ -42,17 +41,4 @@ describe('Контракт mock-профиля', () => {
     expect(await api.getProfile()).toEqual(initialProfile)
   })
 
-  it('проверяет размер и тип аватара, создаёт и освобождает локальное превью', () => {
-    const create = vi.fn(() => 'blob:test-avatar')
-    const revoke = vi.fn()
-    vi.stubGlobal('URL', Object.assign(URL, { createObjectURL: create, revokeObjectURL: revoke }))
-    expect(() => createMockAvatar(new File(['text'], 'file.txt', { type: 'text/plain' }))).toThrow('изображение')
-    expect(() => createMockAvatar(new File([new Uint8Array(5 * 1024 * 1024 + 1)], 'large.png', { type: 'image/png' }))).toThrow('5 МБ')
-    const key = createMockAvatar(new File(['image'], 'avatar.png', { type: 'image/png' }))
-    expect(getAvatarUrl(key)).toBe('blob:test-avatar')
-    releaseMockAvatar(key)
-    expect(getAvatarUrl(key)).toBeUndefined()
-    expect(revoke).toHaveBeenCalledWith('blob:test-avatar')
-    vi.unstubAllGlobals()
-  })
 })

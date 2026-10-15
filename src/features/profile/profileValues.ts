@@ -17,7 +17,6 @@ export const rxOptions = [
 export const roleLabels: Record<ProfileRole, string> = { ATHLETE: 'Атлет', TRAINER: 'Тренер', ADMIN: 'Администратор' }
 
 export type ProfileFormValues = {
-  avatarKey: string | null
   firstName: string
   lastName: string
   birthDate: string
@@ -40,7 +39,6 @@ export function isValidBirthDate(value: string) {
 }
 
 export const toFormValues = (profile: ProfileResponse): ProfileFormValues => ({
-  avatarKey: profile.avatarKey,
   firstName: profile.firstName ?? '',
   lastName: profile.lastName ?? '',
   birthDate: profile.birthDate ?? '',
@@ -55,7 +53,6 @@ const nullableText = (value: string | null | undefined) => value?.trim() || null
 
 export function toUpdateRequest(values: ProfileFormValues, role: ProfileRole): UpdateProfileRequest {
   return {
-    avatarKey: values.avatarKey,
     firstName: nullableText(values.firstName),
     lastName: nullableText(values.lastName),
     birthDate: values.birthDate || null,

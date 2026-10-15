@@ -1,4 +1,3 @@
-import { releaseMockAvatar } from './mockAvatars'
 import type { ProfileApi, ProfileResponse } from './types'
 
 export const initialProfile: ProfileResponse = {
@@ -34,7 +33,6 @@ export function createMockProfileApi(options: { delay?: number; failLoad?: boole
     async updateProfile(request) {
       await wait()
       if (options.failSave) throw new Error('Не удалось сохранить изменения. Попробуйте ещё раз.')
-      if (request.avatarKey !== profile.avatarKey) releaseMockAvatar(profile.avatarKey)
       profile = { ...profile, ...structuredClone(request) }
       return structuredClone(profile)
     },

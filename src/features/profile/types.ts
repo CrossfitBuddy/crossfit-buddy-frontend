@@ -35,7 +35,7 @@ export type ProfileResponse = PersonalProfile & {
   trainerProfile: TrainerProfile | null
 }
 
-export type UpdateProfileRequest = PersonalProfile & {
+export type UpdateProfileRequest = Omit<PersonalProfile, 'avatarKey'> & {
   athleteProfile?: AthleteProfile
   trainerProfile?: TrainerProfile
 }
