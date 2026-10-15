@@ -1,6 +1,8 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
-import { MobileShell } from './app/MobileShell'
-import { DashboardPage } from './pages/DashboardPage'
+import { Route, Routes } from 'react-router-dom'
+import { ProtectedRoute } from './app/ProtectedRoute'
+import { RoleGate } from './app/RoleGate'
+import { appRoutes } from './app/routes'
+import { NotFoundPage } from './pages/ErrorPages'
 import { LoginPage } from './pages/LoginPage'
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage'
 import { RegisterPage } from './pages/RegisterPage'
@@ -13,10 +15,12 @@ export function App() {
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
-      <Route element={<MobileShell />}>
-        <Route path="/" element={<DashboardPage />} />
+      <Route element={<ProtectedRoute />}>
+        {appRoutes.map(({ path, roles, element }) => (
+          <Route key={path} path={path} element={<RoleGate roles={roles}>{element}</RoleGate>} />
+        ))}
+        <Route path="*" element={<NotFoundPage />} />
       </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }
