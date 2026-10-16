@@ -1,5 +1,7 @@
 import { LockOutlined, MailOutlined } from '@ant-design/icons'
 import { Button, Form, Input } from 'antd'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { useAuth } from '../app/auth/useAuth'
 
 type LoginValues = {
   email: string
@@ -7,9 +9,14 @@ type LoginValues = {
 }
 
 export function LoginPage() {
+  const { signIn } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
+
   const submit = (values: LoginValues) => {
-    // Authentication request will be connected with the backend auth module.
-    void values
+    signIn(values.email)
+    const from = location.state?.from
+    navigate(from ? `${from.pathname}${from.search}${from.hash}` : '/', { replace: true })
   }
 
   return (
