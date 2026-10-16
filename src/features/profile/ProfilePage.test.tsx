@@ -73,7 +73,7 @@ describe('Профиль', () => {
     await user.type(screen.getByLabelText('Рост, см'), '-1')
     await user.click(screen.getByRole('button', { name: 'Сохранить' }))
     expect(await screen.findByText('Заполните поле')).toBeInTheDocument()
-    expect(await screen.findByText('Введите число больше нуля')).toBeInTheDocument()
+    expect(await screen.findByText('Введите число от 50 до 250')).toBeInTheDocument()
     expect(updateProfile).not.toHaveBeenCalled()
   })
 
@@ -145,16 +145,28 @@ describe('Профиль', () => {
     expect(updateProfile).not.toHaveBeenCalled()
   })
 
+  it('не превращает дробный рост с запятой в целое число', async () => {
+    const updateProfile = vi.fn()
+    const { user } = setup({ updateProfile })
+    await edit(user)
+    await user.clear(screen.getByLabelText('Рост, см'))
+    await user.type(screen.getByLabelText('Рост, см'), '180,5')
+    await user.click(screen.getByRole('button', { name: 'Сохранить' }))
+    expect(screen.getByLabelText('Рост, см')).toHaveValue('180,5')
+    expect(await screen.findByText('Введите целое число')).toBeInTheDocument()
+    expect(updateProfile).not.toHaveBeenCalled()
+  })
   it('проверяет верхние границы роста, веса и точность веса', async () => {
     const updateProfile = vi.fn()
     const { user } = setup({ updateProfile })
     await edit(user)
     await user.clear(screen.getByLabelText('Рост, см'))
-    await user.type(screen.getByLabelText('Рост, см'), '2147483648')
+    await user.type(screen.getByLabelText('Рост, см'), '251')
     await user.clear(screen.getByLabelText('Вес, кг'))
-    await user.type(screen.getByLabelText('Вес, кг'), '10000')
+    await user.type(screen.getByLabelText('Вес, кг'), '501')
     await user.click(screen.getByRole('button', { name: 'Сохранить' }))
-    expect(await screen.findAllByText('Слишком большое значение')).toHaveLength(2)
+    expect(await screen.findByText('Введите число от 50 до 250')).toBeInTheDocument()
+    expect(await screen.findByText('Введите число от 20 до 500')).toBeInTheDocument()
     await user.clear(screen.getByLabelText('Вес, кг'))
     await user.type(screen.getByLabelText('Вес, кг'), '78,123')
     await user.click(screen.getByRole('button', { name: 'Сохранить' }))
@@ -163,9 +175,10 @@ describe('Профиль', () => {
   })
 
   it.each([
-    ['-1', 'Введите число не меньше нуля'],
+    ['-1', 'Введите число от 0 до 80'],
     ['1.5', 'Введите целое число'],
-    ['2147483648', 'Слишком большое значение'],
+    ['1,5', 'Введите целое число'],
+    ['81', 'Введите число от 0 до 80'],
   ])('не сохраняет недопустимый стаж %s', async (value, message) => {
     const updateProfile = vi.fn()
     const { user } = setup({

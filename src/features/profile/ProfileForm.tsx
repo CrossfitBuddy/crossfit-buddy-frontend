@@ -52,7 +52,7 @@ export function ProfileForm({ profile, saving, onSave, onCancel }: {
       {profile.activeRole === 'ATHLETE' && <section className="mt-8">
         <h2 className={headingClass}>Антропометрия и тренировки</h2>
         <div className="grid grid-cols-2 gap-3">
-          <Form.Item name={['athleteProfile', 'heightCm']} label={whiteLabel('Рост, см')} rules={numberRules('heightCm')}><InputNumber className="!w-full" /></Form.Item>
+          <Form.Item name={['athleteProfile', 'heightCm']} label={whiteLabel('Рост, см')} rules={numberRules('heightCm')}><InputNumber className="!w-full" decimalSeparator="," /></Form.Item>
           <Form.Item name={['athleteProfile', 'weightKg']} label={whiteLabel('Вес, кг')} rules={numberRules('weightKg')}><InputNumber className="!w-full" decimalSeparator="," /></Form.Item>
         </div>
         <Form.Item name={['athleteProfile', 'fitnessLevel']} label={whiteLabel('Уровень подготовки')}><Select allowClear placeholder="Не указан" options={fitnessOptions} /></Form.Item>
@@ -61,7 +61,7 @@ export function ProfileForm({ profile, saving, onSave, onCancel }: {
       {profile.activeRole === 'TRAINER' && <section className="mt-8">
         <h2 className={headingClass}>Тренерское</h2>
         <Form.Item name={['trainerProfile', 'specializations']} label={whiteLabel('Специализации')} rules={textRules(5000)}><Input.TextArea autoSize={{ minRows: 2, maxRows: 8 }} showCount maxLength={5000} /></Form.Item>
-        <Form.Item name={['trainerProfile', 'experienceYears']} label={whiteLabel('Стаж, лет')} rules={numberRules('experienceYears')}><InputNumber className="!w-full" /></Form.Item>
+        <Form.Item name={['trainerProfile', 'experienceYears']} label={whiteLabel('Стаж, лет')} rules={numberRules('experienceYears')}><InputNumber className="!w-full" decimalSeparator="," /></Form.Item>
         <Form.Item name={['trainerProfile', 'methodology']} label={whiteLabel('Подход к тренировкам')} rules={textRules(5000)}><Input.TextArea autoSize={{ minRows: 3, maxRows: 8 }} showCount maxLength={5000} /></Form.Item>
       </section>}
       <div className="mt-7 grid grid-cols-2 gap-3">
