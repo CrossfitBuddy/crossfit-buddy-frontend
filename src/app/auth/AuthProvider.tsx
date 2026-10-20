@@ -1,5 +1,7 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
+import { ACCESS_TOKEN_KEY } from '../../api/http'
 import { AuthContext } from './authContext'
 import type { User, UserRole } from './types'
 
@@ -58,6 +60,7 @@ const resolveActiveRole = (roles: UserRole[]): UserRole => {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient()
   const [session, setSession] = useState<Session | null>(readSession)
 
   const saveSession = useCallback((next: Session | null) => {
@@ -70,7 +73,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     saveSession({ user, activeRole: resolveActiveRole(user.roles) })
   }, [saveSession])
 
-  const signOut = useCallback(() => saveSession(null), [saveSession])
+  const signOut = useCallback(() => {
+    writeStorage(ACCESS_TOKEN_KEY, null)
+    writeStorage(LAST_ROLE_KEY, null)
+    queryClient.clear()
+    saveSession(null)
+  }, [queryClient, saveSession])
 
   const switchRole = useCallback((role: UserRole) => {
     if (!session || !session.user.roles.includes(role)) return

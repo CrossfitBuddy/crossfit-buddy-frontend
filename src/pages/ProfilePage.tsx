@@ -1,4 +1,5 @@
 import { Button, Select } from 'antd'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../app/auth/useAuth'
 import type { UserRole } from '../app/auth/types'
 
@@ -10,7 +11,13 @@ const roleLabels: Record<UserRole, string> = {
 
 export function ProfilePage() {
   const { user, activeRole, switchRole, signOut } = useAuth()
+  const navigate = useNavigate()
   if (!user || !activeRole) return null
+
+  const logout = () => {
+    signOut()
+    navigate('/login', { replace: true })
+  }
 
   const switchableRoles = user.roles.filter((role) => role !== 'ADMIN')
 
@@ -35,7 +42,7 @@ export function ProfilePage() {
             <p className="text-lg font-bold">{roleLabels[activeRole]}</p>
           )}
         </div>
-        <Button block size="large" onClick={signOut}>Выйти</Button>
+        <Button block size="large" onClick={logout}>Выйти</Button>
       </section>
     </>
   )
