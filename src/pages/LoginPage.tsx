@@ -1,38 +1,52 @@
 import { LockOutlined, MailOutlined } from '@ant-design/icons'
-import { Button, Form, Input } from 'antd'
+import { Alert, Button, Form, Input } from 'antd'
+import { useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../app/auth/useAuth'
+import { authErrorMessage } from '../features/auth/authApi'
+import { returnAddress } from '../features/auth/validation'
 
-type LoginValues = {
-  email: string
-  password: string
-}
+type LoginValues = { email: string; password: string }
 
 export function LoginPage() {
   const { signIn } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const [form] = Form.useForm<LoginValues>()
+  const [pending, setPending] = useState(false)
+  const [error, setError] = useState('')
+  const busy = useRef(false)
 
-  const submit = (values: LoginValues) => {
-    signIn(values.email)
-    const from = location.state?.from
-    navigate(from ? `${from.pathname}${from.search}${from.hash}` : '/', { replace: true })
+  const submit = async (values: LoginValues) => {
+    if (busy.current) return
+    busy.current = true
+    setPending(true)
+    setError('')
+    try {
+      await signIn(values.email, values.password)
+      form.resetFields(['password'])
+      navigate(returnAddress(location.state?.from), { replace: true })
+    } catch (error) { setError(authErrorMessage(error)) }
+    finally { busy.current = false; setPending(false) }
   }
 
-  return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center bg-[#101914] px-6 text-white">
-      <p className="text-sm font-bold uppercase tracking-[0.24em] text-lime-400">CrossfitBuddy</p>
-      <h1 className="mt-3 text-4xl font-black">Войти</h1>
-      <Form<LoginValues> layout="vertical" requiredMark={false} className="mt-8" onFinish={submit}>
-        <Form.Item name="email" label={<span className="text-white">Email</span>} rules={[{ required: true, message: 'Введите email' }, { type: 'email', message: 'Проверьте формат email' }]}>
-          <Input prefix={<MailOutlined />} type="email" placeholder="athlete@example.com" autoComplete="email" />
+  return <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center bg-[#101914] px-6 py-10 text-white">
+    <p className="text-sm font-bold text-lime-400">CrossfitBuddy</p>
+    <h1 className="mt-3 text-4xl font-black">Войти</h1>
+    {location.state?.passwordChanged && <div role="status" className="mt-6"><Alert type="success" showIcon title="Пароль успешно изменен. Вы можете войти в систему с новым паролем" /></div>}
+    {error && <div role="alert" className="mt-6"><Alert type="error" showIcon title={error} /></div>}
+    <div className="mt-6">
+      <Form<LoginValues> form={form} noValidate onSubmitCapture={(event) => { if (busy.current) { event.preventDefault(); event.stopPropagation() } }} layout="vertical" requiredMark={false} onFinish={submit} disabled={pending} onValuesChange={() => { if (!busy.current) setError('') }}>
+        <Form.Item name="email" normalize={(value: string) => value.trim()} label={<span className="text-white">Email</span>} rules={[{ required: true, message: 'Введите email' }, { type: 'email', message: 'Введите корректный email' }, { max: 320, message: 'Максимум 320 символов' }]}>
+          <Input prefix={<MailOutlined />} type="email" autoComplete="email" />
         </Form.Item>
-        <Form.Item name="password" label={<span className="text-white">Пароль</span>} rules={[{ required: true, message: 'Введите пароль' }]}>
-          <Input.Password prefix={<LockOutlined />} placeholder="Пароль" autoComplete="current-password" />
+        <Form.Item name="password" label={<span className="text-white">Пароль</span>} rules={[{ required: true, whitespace: true, message: 'Введите пароль' }]}>
+          <Input.Password prefix={<LockOutlined />} autoComplete="current-password" />
         </Form.Item>
-        <Button type="primary" htmlType="submit" block size="large">Продолжить</Button>
-        <p className="mt-4 text-center"><Link to="/forgot-password" className="text-stone-300">Забыли пароль?</Link></p>
+        <Button type="primary" htmlType="submit" block size="large" loading={pending}>{pending ? 'Входим…' : 'Войти'}</Button>
       </Form>
-    </main>
-  )
+    </div>
+    <p className="mt-4 text-center"><Link to="/forgot-password" className={pending ? 'pointer-events-none text-stone-400' : '!text-stone-300'} tabIndex={pending ? -1 : undefined}>Забыли пароль?</Link></p>
+    <p className="mt-3 text-center"><Link to="/register" className={pending ? 'pointer-events-none text-stone-400' : '!text-lime-400'} tabIndex={pending ? -1 : undefined}>Зарегистрироваться</Link></p>
+  </main>
 }
