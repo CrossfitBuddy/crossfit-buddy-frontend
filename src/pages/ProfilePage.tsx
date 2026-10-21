@@ -1,5 +1,6 @@
 import { Alert, Button, Select } from 'antd'
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { authErrorMessage } from '../features/auth/authApi'
 import { useAuth } from '../app/auth/useAuth'
 import type { UserRole } from '../app/auth/types'
@@ -12,6 +13,7 @@ const roleLabels: Record<UserRole, string> = {
 
 export function ProfilePage() {
   const { user, activeRole, switchRole, signOut } = useAuth()
+  const navigate = useNavigate()
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
   if (!user || !activeRole) return null
@@ -41,7 +43,7 @@ export function ProfilePage() {
           )}
         </div>
         <div role="alert">{error && <Alert type="error" title={error} showIcon />}</div>
-        <Button block size="large" disabled={pending} onClick={signOut}>Выйти</Button>
+        <Button block size="large" disabled={pending} onClick={() => { signOut(); navigate('/login', { replace: true }) }}>Выйти</Button>
       </section>
     </>
   )

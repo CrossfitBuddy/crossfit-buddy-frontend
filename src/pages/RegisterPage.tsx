@@ -1,9 +1,10 @@
 import { LockOutlined, MailOutlined, UserOutlined } from '@ant-design/icons'
+import { useMutation } from '@tanstack/react-query'
 import { Alert, Button, Form, Input, Select } from 'antd'
+import { isAxiosError } from 'axios'
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
-
-type Role = 'ATHLETE' | 'TRAINER'
+import { Link, useNavigate } from 'react-router-dom'
+import { registerUser, type UserRole } from '../api/auth'
 
 type RegisterValues = {
   firstName: string
@@ -11,10 +12,8 @@ type RegisterValues = {
   email: string
   password: string
   confirmPassword: string
-  role: Role
+  role: UserRole
 }
-
-const TAKEN_EMAILS = ['ivan@example.com']
 
 const roleOptions = [
   { value: 'ATHLETE', label: 'Атлет' },
@@ -23,18 +22,44 @@ const roleOptions = [
 
 const whiteLabel = (text: string) => <span className="text-white">{text}</span>
 
+function getErrorMessage(error: unknown) {
+  if (isAxiosError(error)) {
+    if (!error.response) return 'Не удалось связаться с сервером. Попробуйте ещё раз'
+    if (error.response.status === 409) return 'Пользователь с таким email уже зарегистрирован'
+  }
+  return 'Не удалось зарегистрироваться. Попробуйте ещё раз'
+}
+
 export function RegisterPage() {
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
+  const navigate = useNavigate()
+  const [sentTo, setSentTo] = useState<string | null>(null)
+  const register = useMutation({ mutationFn: registerUser })
 
   const submit = (values: RegisterValues) => {
-    if (TAKEN_EMAILS.includes(values.email.trim().toLowerCase())) {
-      setError('Пользователь с таким email уже зарегистрирован')
-      setSuccess(false)
-      return
-    }
-    setError(null)
-    setSuccess(true)
+    if (register.isPending) return
+    const email = values.email.trim()
+    register.mutate(
+      {
+        email,
+        password: values.password,
+        displayName: `${values.firstName.trim()} ${values.lastName.trim()}`,
+        role: values.role,
+      },
+      { onSuccess: () => setSentTo(email) },
+    )
+  }
+
+  if (sentTo) {
+    return (
+      <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center bg-[#101914] px-6 py-10 text-white">
+        <p className="text-sm font-bold text-lime-400">CrossfitBuddy</p>
+        <h1 className="mt-2 text-4xl font-black">Проверьте почту</h1>
+        <p className="mt-4 text-stone-300">
+          Мы отправили письмо на <span className="font-bold text-white">{sentTo}</span>. Перейдите по ссылке из письма, чтобы подтвердить аккаунт.
+        </p>
+        <Button type="primary" block size="large" className="mt-8" onClick={() => navigate('/login')}>Перейти ко входу</Button>
+      </main>
+    )
   }
 
   return (
@@ -42,8 +67,7 @@ export function RegisterPage() {
       <p className="text-sm font-bold text-lime-400">CrossfitBuddy</p>
       <h1 className="mt-2 text-4xl font-black">Регистрация</h1>
 
-      {error && <div className="mt-6"><Alert type="error" showIcon title={error} /></div>}
-      {success && <div className="mt-6"><Alert type="success" showIcon title="Аккаунт создан" /></div>}
+      {register.isError && <div className="mt-6"><Alert type="error" showIcon title={getErrorMessage(register.error)} /></div>}
 
       <div className="mt-6">
         <Form<RegisterValues>
@@ -51,8 +75,7 @@ export function RegisterPage() {
           requiredMark={false}
           onFinish={submit}
           onValuesChange={() => {
-            setError(null)
-            setSuccess(false)
+            if (!register.isPending) register.reset()
           }}
         >
           <Form.Item name="firstName" label={whiteLabel('Имя')} rules={[{ required: true, whitespace: true, message: 'Введите имя' }]}>
@@ -97,10 +120,10 @@ export function RegisterPage() {
           </Form.Item>
 
           <Form.Item name="role" label={whiteLabel('Роль')} rules={[{ required: true, message: 'Выберите роль' }]}>
-            <Select<Role> placeholder="Выберите роль" options={roleOptions} />
+            <Select<UserRole> placeholder="Выберите роль" options={roleOptions} />
           </Form.Item>
 
-          <Button type="primary" htmlType="submit" block size="large">Зарегистрироваться</Button>
+          <Button type="primary" htmlType="submit" block size="large" loading={register.isPending}>Зарегистрироваться</Button>
         </Form>
       </div>
 
