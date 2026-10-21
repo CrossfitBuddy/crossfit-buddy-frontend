@@ -10,5 +10,6 @@ export type AuthState = {
   signIn: (email: string, password: string) => Promise<void>
   signOut: () => void
   switchRole: (role: UserRole) => Promise<void>
+  updateCurrentUser: (user: Pick<User, 'id' | 'email' | 'displayName'>) => boolean
 }
 export const AuthContext = createContext<AuthState | null>(null)
