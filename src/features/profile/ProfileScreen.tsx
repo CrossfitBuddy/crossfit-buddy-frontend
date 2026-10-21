@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Alert, Avatar, Button, Select, Spin } from 'antd'
+import { Alert, Button, Select, Spin } from 'antd'
 import { ArrowLeft } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { ProfileAvatar } from './ProfileAvatar'
+import type { AvatarApi } from './avatarApi'
 import { ProfileDetails } from './ProfileDetails'
 import { ProfileForm } from './ProfileForm'
 import { ProfileError } from './profileApi'
@@ -11,6 +13,7 @@ import type { ProfileApi, ProfileResponse, ProfileRole } from './types'
 
 type Props = {
   api: Pick<ProfileApi, 'getProfile' | 'updateProfile'> & Partial<Pick<ProfileApi, 'switchRole'>>
+  avatarApi?: AvatarApi
   accountId?: string
   activeRole?: ProfileRole
   roles?: ProfileRole[]
@@ -21,8 +24,9 @@ type Props = {
 }
 const message = (error: unknown, fallback: string) => error instanceof ProfileError ? error.message : fallback
 
-export function ProfileScreen({ api, accountId, activeRole, roles, onRoleChange, onSaved, onSessionExpired, onSignOut }: Props) {
+export function ProfileScreen({ api, avatarApi, accountId, activeRole, roles, onRoleChange, onSaved, onSessionExpired, onSignOut }: Props) {
   const client = useQueryClient()
+  const [avatarBusy, setAvatarBusy] = useState(false)
   const [editing, setEditing] = useState(false)
   const [saved, setSaved] = useState(false)
   const [storeWarning, setStoreWarning] = useState('')
@@ -89,20 +93,20 @@ export function ProfileScreen({ api, accountId, activeRole, roles, onRoleChange,
     <header className="mb-7">
       <p className="text-sm font-bold text-lime-400">CrossfitBuddy</p>
       <div className="mt-3 flex items-center gap-2">
-        {editing && <Button type="text" className="!text-white" htmlType="reset" form="profile-edit" aria-label="Назад к профилю" icon={<ArrowLeft size={20} />} disabled={saving} />}
+        {editing && <Button type="text" className="!text-white" htmlType="reset" form="profile-edit" aria-label="Назад к профилю" icon={<ArrowLeft size={20} />} disabled={saving || avatarBusy} />}
         <h1 className={editing ? 'min-w-0 text-2xl font-black' : 'text-4xl font-black'}>{editing ? 'Редактирование' : 'Профиль'}</h1>
       </div>
     </header>
     {query.isPending && <div role="status" aria-label="Загрузка профиля" className="flex items-center gap-3 py-8 text-stone-300"><Spin /><span>Загрузка профиля…</span></div>}
     {query.isError && <div role="alert" className="mb-5">
       <Alert type="error" showIcon title={profile ? "Не удалось обновить профиль" : "Профиль недоступен"} description={message(query.error, 'Не удалось загрузить данные. Попробуйте ещё раз.')} />
-      <Button type="primary" className="mt-4" size="large" block onClick={() => void refresh()} loading={query.isFetching} disabled={saving}>Повторить загрузку</Button>
+      <Button type="primary" className="mt-4" size="large" block onClick={() => void refresh()} loading={query.isFetching} disabled={saving || avatarBusy}>Повторить загрузку</Button>
     </div>}
     {profile && <>
       {!editing && <div className="mb-8 flex flex-col items-center">
-        <Avatar size={88} className="!bg-[#20321b] !text-3xl !font-bold !text-lime-400">{profile.firstName?.[0]}{profile.lastName?.[0]}</Avatar>
+        <ProfileAvatar profile={profile} api={avatarApi} controls onBusyChange={setAvatarBusy} onSessionExpired={onSessionExpired} />
         <h2 className="mt-4 max-w-full break-words text-center text-2xl font-bold">{[profile.firstName, profile.lastName].filter(Boolean).join(' ') || 'Пользователь'}</h2>
-        {profile.roles.length > 1 ? <Select<ProfileRole> aria-label="Активная роль" className="mt-3 !w-40" options={profile.roles.map((value) => ({ value, label: roleLabels[value] }))} value={profile.activeRole} onChange={switchRole} disabled={role.isPending || query.isFetching} loading={role.isPending} /> : <p className="mt-3 rounded-full bg-[#20321b] px-5 py-1 text-sm font-bold text-lime-400">{roleLabels[profile.activeRole]}</p>}
+        {profile.roles.length > 1 ? <Select<ProfileRole> aria-label="Активная роль" className="mt-3 !w-40" options={profile.roles.map((value) => ({ value, label: roleLabels[value] }))} value={profile.activeRole} onChange={switchRole} disabled={avatarBusy || role.isPending || query.isFetching} loading={role.isPending} /> : <p className="mt-3 rounded-full bg-[#20321b] px-5 py-1 text-sm font-bold text-lime-400">{roleLabels[profile.activeRole]}</p>}
         {role.isPending && <p role="status" className="mt-2 text-sm text-stone-400">Переключение роли…</p>}
       </div>}
       {saved && <div role="status" className="mb-5"><Alert type="success" showIcon title="Изменения сохранены" /></div>}
@@ -113,6 +117,7 @@ export function ProfileScreen({ api, accountId, activeRole, roles, onRoleChange,
       </div>}
       {editing ? <ProfileForm
         profile={profile}
+        avatar={<ProfileAvatar profile={profile} api={avatarApi} onSessionExpired={onSessionExpired} />}
         saving={saving}
         onSave={submit}
         serverErrors={save.error instanceof ProfileError ? save.error.fields : undefined}
@@ -120,9 +125,9 @@ export function ProfileScreen({ api, accountId, activeRole, roles, onRoleChange,
         onCancel={() => { setEditing(false); save.reset() }}
       /> : <>
         <ProfileDetails profile={profile} />
-        <Button type="primary" block size="large" className="mt-8" disabled={role.isPending || query.isFetching} onClick={() => { save.reset(); role.reset(); setSaved(false); setStoreWarning(''); setEditing(true) }}>Редактировать профиль</Button>
-        <Button ghost block size="large" className="mt-3" loading={query.isFetching} disabled={saving} onClick={() => void refresh()}>Обновить данные</Button>
-        {onSignOut && <Button type="link" block className="mt-3 !text-stone-300" disabled={saving} onClick={onSignOut}>Выйти</Button>}
+        <Button type="primary" block size="large" className="mt-8" disabled={avatarBusy || role.isPending || query.isFetching} onClick={() => { save.reset(); role.reset(); setSaved(false); setStoreWarning(''); setEditing(true) }}>Редактировать профиль</Button>
+        <Button ghost block size="large" className="mt-3" loading={query.isFetching} disabled={saving || avatarBusy} onClick={() => void refresh()}>Обновить данные</Button>
+        {onSignOut && <Button type="link" block className="mt-3 !text-stone-300" disabled={saving || avatarBusy} onClick={onSignOut}>Выйти</Button>}
       </>}
     </>}
   </div>
