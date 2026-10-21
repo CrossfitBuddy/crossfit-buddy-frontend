@@ -9,13 +9,14 @@ import { roleLabels, toUpdateRequest } from './profileValues'
 import type { ProfileFormValues } from './profileValues'
 import type { ProfileApi, ProfileRole } from './types'
 
-const profileKey = ['profile']
 
-export function ProfileScreen({ api = profileApi, activeRole, roles, onRoleChange, onSignOut }: {
-  api?: ProfileApi; activeRole?: ProfileRole; roles?: ProfileRole[]
+
+export function ProfileScreen({ api = profileApi, accountKey, activeRole, roles, onRoleChange, onSignOut }: {
+  api?: ProfileApi; accountKey?: string; activeRole?: ProfileRole; roles?: ProfileRole[]
   onRoleChange?: (role: ProfileRole) => void; onSignOut?: () => void
 }) {
   const client = useQueryClient()
+  const profileKey = ['profile', accountKey ?? 'preview']
   const [editing, setEditing] = useState(false)
   const [saved, setSaved] = useState(false)
   const busy = useRef(false)
