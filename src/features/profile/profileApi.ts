@@ -9,21 +9,22 @@ const profileSchema = z.object({
   id: z.string().min(1),
   email: z.string().email(),
   roles: z.array(role).min(1),
-  activeRole: role,
-  firstName: text,
-  lastName: text,
+  displayName: z.string(),
+  initials: z.string(),
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
   birthDate: text.refine((value) => value === null || isValidBirthDate(value)),
   gender: z.enum(['MALE', 'FEMALE', 'OTHER']).nullable().default(null),
   city: text,
   about: text,
-  avatarKey: text,
-  athleteProfile: z.object({
+  avatarUrl: text,
+  athlete: z.object({
     heightCm: z.number().finite().nullable().default(null),
     weightKg: z.number().finite().nullable().default(null),
     fitnessLevel: z.enum(['BEGINNER', 'INTERMEDIATE', 'ADVANCED']).nullable().default(null),
     rxPreference: z.enum(['RX', 'SCALED']).nullable().default(null),
   }).nullable().default(null),
-  trainerProfile: z.object({
+  trainer: z.object({
     specializations: text,
     experienceYears: z.number().finite().nullable().default(null),
     methodology: text,
@@ -50,6 +51,7 @@ export class ProfileError extends Error {
 }
 
 function fieldError(field: unknown, message: unknown): ProfileFieldError | null {
+  if (typeof field === 'string') field = field.replace(/^athlete\./, 'athleteProfile.').replace(/^trainer\./, 'trainerProfile.')
   if (typeof field !== 'string' || !profileFields.includes(field as typeof profileFields[number])) return null
   const required = typeof message === 'string' && /required|not.?blank|not.?null|обязател|заполн/i.test(message)
   return { field: field as typeof profileFields[number], message: required ? 'Заполните поле' : 'Проверьте значение поля' }
@@ -100,7 +102,8 @@ export function createProfileApi(getToken: () => string | null, accountId?: stri
   const parse = (value: unknown): ProfileResponse => {
     const result = profileSchema.safeParse(value)
     if (!result.success || (accountId && result.data.id !== accountId)) throw new ProfileError('Сервер вернул некорректный профиль. Попробуйте позже.')
-    return result.data
+    const { athlete, trainer, ...common } = result.data
+    return { ...common, avatarKey: null, activeRole: common.roles[0], athleteProfile: athlete, trainerProfile: trainer }
   }
   return {
     async getProfile(signal?: AbortSignal) {
@@ -108,7 +111,12 @@ export function createProfileApi(getToken: () => string | null, accountId?: stri
       catch (error) { throw profileRequestError(error) }
     },
     async updateProfile(request: UpdateProfileRequest) {
-      try { return parse((await http.patch('/api/users/me', request, config())).data) }
+      const { athleteProfile, trainerProfile, ...common } = request
+      const body = { ...common,
+        ...(athleteProfile ? { athlete: athleteProfile } : {}),
+        ...(trainerProfile ? { trainer: trainerProfile } : {}),
+      }
+      try { return parse((await http.patch('/api/users/me', body, config())).data) }
       catch (error) { throw profileRequestError(error) }
     },
   }

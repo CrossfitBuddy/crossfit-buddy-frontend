@@ -27,6 +27,9 @@ export type PersonalProfile = {
 }
 
 export type ProfileResponse = PersonalProfile & {
+  displayName?: string
+  avatarUrl?: string | null
+  initials?: string
   id: string
   email: string
   roles: ProfileRole[]
