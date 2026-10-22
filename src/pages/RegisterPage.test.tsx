@@ -22,12 +22,15 @@ function renderPage() {
   )
 }
 
-async function fillForm(user: ReturnType<typeof userEvent.setup>, overrides: { confirmPassword?: string } = {}) {
-  await user.type(screen.getByLabelText('Имя'), 'Иван')
+type FormOverrides = { firstName?: string; password?: string; confirmPassword?: string }
+
+async function fillForm(user: ReturnType<typeof userEvent.setup>, overrides: FormOverrides = {}) {
+  const password = overrides.password ?? 'Pass123!'
+  await user.type(screen.getByLabelText('Имя'), overrides.firstName ?? 'Иван')
   await user.type(screen.getByLabelText('Фамилия'), 'Петров')
   await user.type(screen.getByLabelText('Email'), 'ivan@example.com')
-  await user.type(screen.getByLabelText('Пароль'), '12345678')
-  await user.type(screen.getByLabelText('Подтверждение пароля'), overrides.confirmPassword ?? '12345678')
+  await user.type(screen.getByLabelText('Пароль'), password)
+  await user.type(screen.getByLabelText('Подтверждение пароля'), overrides.confirmPassword ?? password)
   await user.click(screen.getByLabelText('Роль'))
   await user.click(await screen.findByTitle('Атлет'))
 }
@@ -58,9 +61,11 @@ describe('RegisterPage', () => {
 
     expect(await screen.findByText('Проверьте почту')).toBeInTheDocument()
     expect(registerUserMock.mock.calls[0][0]).toEqual({
+      firstName: 'Иван',
+      lastName: 'Петров',
       email: 'ivan@example.com',
-      password: '12345678',
-      displayName: 'Иван Петров',
+      password: 'Pass123!',
+      passwordConfirmation: 'Pass123!',
       role: 'ATHLETE',
     })
   })
@@ -101,11 +106,38 @@ describe('RegisterPage', () => {
     expect(registerUserMock).not.toHaveBeenCalled()
   })
 
+  it.each([
+    ['короткий', 'Pa1!'],
+    ['без цифр', 'Password!'],
+    ['без спецсимволов', 'Password1'],
+    ['длиннее 30 символов', `Pass1!${'a'.repeat(25)}`],
+  ])('не отправляет форму, если пароль %s', async (_, password) => {
+    const user = userEvent.setup()
+    renderPage()
+
+    await fillForm(user, { password })
+    await user.click(screen.getByRole('button', { name: 'Зарегистрироваться' }))
+
+    expect(await screen.findByText('8–30 символов: буквы, цифры и спецсимволы')).toBeInTheDocument()
+    expect(registerUserMock).not.toHaveBeenCalled()
+  })
+
+  it.each(['иван', 'Иван2'])('не отправляет форму, если имя %s', async (firstName) => {
+    const user = userEvent.setup()
+    renderPage()
+
+    await fillForm(user, { firstName })
+    await user.click(screen.getByRole('button', { name: 'Зарегистрироваться' }))
+
+    expect(await screen.findByText('С заглавной буквы, только буквы, дефис, апостроф и пробел')).toBeInTheDocument()
+    expect(registerUserMock).not.toHaveBeenCalled()
+  })
+
   it('не отправляет форму, если пароли не совпадают', async () => {
     const user = userEvent.setup()
     renderPage()
 
-    await fillForm(user, { confirmPassword: '87654321' })
+    await fillForm(user, { confirmPassword: 'Pass123?' })
     await user.click(screen.getByRole('button', { name: 'Зарегистрироваться' }))
 
     expect(await screen.findByText('Введённые пароли не совпадают')).toBeInTheDocument()

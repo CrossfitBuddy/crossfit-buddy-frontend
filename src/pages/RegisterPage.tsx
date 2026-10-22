@@ -22,6 +22,14 @@ const roleOptions = [
 
 const whiteLabel = (text: string) => <span className="text-white">{text}</span>
 
+const nameRules = (message: string) => [
+  { required: true, whitespace: true, message },
+  { max: 100, message: 'Максимум 100 символов' },
+  { pattern: /^\p{Lu}[\p{L}' -]*$/u, message: 'С заглавной буквы, только буквы, дефис, апостроф и пробел' },
+]
+
+const PASSWORD_PATTERN = /^(?=.*\p{L})(?=.*\d)(?=.*[^\p{L}\d\s]).{8,30}$/u
+
 function getErrorMessage(error: unknown) {
   if (isAxiosError(error)) {
     if (!error.response) return 'Не удалось связаться с сервером. Попробуйте ещё раз'
@@ -40,9 +48,11 @@ export function RegisterPage() {
     const email = values.email.trim()
     register.mutate(
       {
+        firstName: values.firstName.trim(),
+        lastName: values.lastName.trim(),
         email,
         password: values.password,
-        displayName: `${values.firstName.trim()} ${values.lastName.trim()}`,
+        passwordConfirmation: values.confirmPassword,
         role: values.role,
       },
       { onSuccess: () => setSentTo(email) },
@@ -78,11 +88,11 @@ export function RegisterPage() {
             if (!register.isPending) register.reset()
           }}
         >
-          <Form.Item name="firstName" label={whiteLabel('Имя')} rules={[{ required: true, whitespace: true, message: 'Введите имя' }]}>
+          <Form.Item name="firstName" label={whiteLabel('Имя')} rules={nameRules('Введите имя')}>
             <Input prefix={<UserOutlined />} placeholder="Иван" autoComplete="given-name" />
           </Form.Item>
 
-          <Form.Item name="lastName" label={whiteLabel('Фамилия')} rules={[{ required: true, whitespace: true, message: 'Введите фамилию' }]}>
+          <Form.Item name="lastName" label={whiteLabel('Фамилия')} rules={nameRules('Введите фамилию')}>
             <Input prefix={<UserOutlined />} placeholder="Петров" autoComplete="family-name" />
           </Form.Item>
 
@@ -97,9 +107,12 @@ export function RegisterPage() {
           <Form.Item
             name="password"
             label={whiteLabel('Пароль')}
-            rules={[{ required: true, message: 'Введите пароль' }, { min: 8, message: 'Минимум 8 символов' }]}
+            rules={[
+              { required: true, message: 'Введите пароль' },
+              { pattern: PASSWORD_PATTERN, message: '8–30 символов: буквы, цифры и спецсимволы' },
+            ]}
           >
-            <Input.Password prefix={<LockOutlined />} placeholder="Минимум 8 символов" autoComplete="new-password" />
+            <Input.Password prefix={<LockOutlined />} placeholder="8–30 символов" autoComplete="new-password" />
           </Form.Item>
 
           <Form.Item
