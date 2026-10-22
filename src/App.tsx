@@ -7,6 +7,7 @@ import { LoginPage } from './pages/LoginPage'
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { ResetPasswordPage } from './pages/ResetPasswordPage'
+import { RoleNotAssignedPage } from './pages/RoleNotAssignedPage'
 
 export function App() {
   return (
@@ -15,6 +16,7 @@ export function App() {
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/role-not-assigned" element={<RoleNotAssignedPage />} />
       <Route element={<ProtectedRoute />}>
         {appRoutes.map(({ path, roles, element }) => (
           <Route key={path} path={path} element={<RoleGate roles={roles}>{element}</RoleGate>} />

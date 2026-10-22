@@ -1,8 +1,8 @@
 export type UserRole = 'ATHLETE' | 'TRAINER' | 'ADMIN'
 
 export type User = {
+  id: string
   email: string
-  firstName: string
-  lastName: string
+  displayName: string
   roles: UserRole[]
 }

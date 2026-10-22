@@ -1,5 +1,6 @@
-import { Button, Select } from 'antd'
+import { Button, Select, App as AntApp } from 'antd'
 import { useNavigate } from 'react-router-dom'
+import { getApiErrorCode } from '../api/session'
 import { useAuth } from '../app/auth/useAuth'
 import type { UserRole } from '../app/auth/types'
 
@@ -9,8 +10,11 @@ const roleLabels: Record<UserRole, string> = {
   ADMIN: 'Администратор',
 }
 
+const switchableRoles: UserRole[] = ['ATHLETE', 'TRAINER']
+
 export function ProfilePage() {
-  const { user, activeRole, switchRole, signOut } = useAuth()
+  const { user, activeRole, switching, switchRole, signOut } = useAuth()
+  const { message } = AntApp.useApp()
   const navigate = useNavigate()
   if (!user || !activeRole) return null
 
@@ -19,23 +23,38 @@ export function ProfilePage() {
     navigate('/login', { replace: true })
   }
 
-  const switchableRoles = user.roles.filter((role) => role !== 'ADMIN')
+  const canSwitchRole = !user.roles.includes('ADMIN') && switchableRoles.every((role) => user.roles.includes(role))
+
+  const changeRole = async (role: UserRole) => {
+    try {
+      await switchRole(role)
+      navigate('/', { replace: true })
+    } catch (error) {
+      message.error(
+        getApiErrorCode(error) === 'ACCESS_DENIED'
+          ? 'Эта роль не назначена вашей учётной записи'
+          : 'Не удалось сменить роль. Попробуйте ещё раз',
+      )
+    }
+  }
 
   return (
     <>
       <header className="bg-[#101914] px-6 pb-8 pt-12 text-white">
-        <h1 className="text-3xl font-black">{user.firstName} {user.lastName}</h1>
+        <h1 className="text-3xl font-black">{user.displayName}</h1>
         <p className="mt-2 text-stone-300">{user.email}</p>
       </header>
       <section className="space-y-6 px-6 py-8">
         <div>
           <p className="mb-2 text-sm font-bold text-stone-600">Активная роль</p>
-          {switchableRoles.length > 1 ? (
+          {canSwitchRole ? (
             <Select<UserRole>
               className="w-full"
               size="large"
               value={activeRole}
-              onChange={switchRole}
+              loading={switching}
+              disabled={switching}
+              onChange={changeRole}
               options={switchableRoles.map((role) => ({ value: role, label: roleLabels[role] }))}
             />
           ) : (

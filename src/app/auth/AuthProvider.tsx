@@ -1,7 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { ACCESS_TOKEN_KEY } from '../../api/http'
+import { getApiErrorStatus, login, switchActiveRole } from '../../api/session'
+import type { AuthResponse } from '../../api/session'
 import { AuthContext } from './authContext'
 import type { User, UserRole } from './types'
 
@@ -11,7 +13,6 @@ type Session = {
 }
 
 const SESSION_KEY = 'cb-session'
-const LAST_ROLE_KEY = 'cb-last-role'
 
 const readStorage = (key: string) => {
   try {
@@ -32,7 +33,7 @@ const writeStorage = (key: string, value: string | null) => {
 
 const readSession = (): Session | null => {
   const raw = readStorage(SESSION_KEY)
-  if (!raw) return null
+  if (!raw || !readStorage(ACCESS_TOKEN_KEY)) return null
   try {
     return JSON.parse(raw) as Session
   } catch {
@@ -40,61 +41,61 @@ const readSession = (): Session | null => {
   }
 }
 
-const createMockUser = (email: string): User => {
-  const name = email.trim().toLowerCase()
-  const roles: UserRole[] = name.startsWith('admin')
-    ? ['ADMIN']
-    : name.startsWith('trainer')
-      ? ['TRAINER']
-      : name.startsWith('athlete')
-        ? ['ATHLETE']
-        : ['ATHLETE', 'TRAINER']
-  return { email: name, firstName: 'Иван', lastName: 'Петров', roles }
-}
-
-const resolveActiveRole = (roles: UserRole[]): UserRole => {
-  if (roles.includes('ADMIN')) return 'ADMIN'
-  if (roles.length === 1) return roles[0]
-  const lastRole = readStorage(LAST_ROLE_KEY) as UserRole | null
-  return lastRole && roles.includes(lastRole) ? lastRole : 'ATHLETE'
-}
+const toSession = ({ user }: AuthResponse): Session => ({
+  user: { id: user.id, email: user.email, displayName: user.displayName, roles: user.roles },
+  activeRole: user.activeRole,
+})
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
   const [session, setSession] = useState<Session | null>(readSession)
+  const [switching, setSwitching] = useState(false)
+  const switchingRef = useRef(false)
 
-  const saveSession = useCallback((next: Session | null) => {
-    setSession(next)
+  const saveSession = useCallback((next: Session | null, token: string | null) => {
+    writeStorage(ACCESS_TOKEN_KEY, token)
     writeStorage(SESSION_KEY, next ? JSON.stringify(next) : null)
+    setSession(next)
   }, [])
 
-  const signIn = useCallback((email: string) => {
-    const user = createMockUser(email)
-    saveSession({ user, activeRole: resolveActiveRole(user.roles) })
+  const signIn = useCallback(async (email: string, password: string) => {
+    const response = await login(email, password)
+    saveSession(toSession(response), response.accessToken)
   }, [saveSession])
 
   const signOut = useCallback(() => {
-    writeStorage(ACCESS_TOKEN_KEY, null)
-    writeStorage(LAST_ROLE_KEY, null)
     queryClient.clear()
-    saveSession(null)
+    saveSession(null, null)
   }, [queryClient, saveSession])
 
-  const switchRole = useCallback((role: UserRole) => {
-    if (!session || !session.user.roles.includes(role)) return
-    writeStorage(LAST_ROLE_KEY, role)
-    saveSession({ ...session, activeRole: role })
-  }, [session, saveSession])
+  const switchRole = useCallback(async (role: UserRole) => {
+    if (!session || switchingRef.current || role === session.activeRole) return
+    if (!session.user.roles.includes(role)) return
+    switchingRef.current = true
+    setSwitching(true)
+    try {
+      const response = await switchActiveRole(role)
+      queryClient.clear()
+      saveSession(toSession(response), response.accessToken)
+    } catch (error) {
+      if (getApiErrorStatus(error) === 401) saveSession(null, null)
+      throw error
+    } finally {
+      switchingRef.current = false
+      setSwitching(false)
+    }
+  }, [session, queryClient, saveSession])
 
   const value = useMemo(
     () => ({
       user: session?.user ?? null,
       activeRole: session?.activeRole ?? null,
+      switching,
       signIn,
       signOut,
       switchRole,
     }),
-    [session, signIn, signOut, switchRole],
+    [session, switching, signIn, signOut, switchRole],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
