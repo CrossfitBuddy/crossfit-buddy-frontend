@@ -3,9 +3,11 @@ import { api } from './http'
 export type UserRole = 'ATHLETE' | 'TRAINER'
 
 export type RegisterRequest = {
+  firstName: string
+  lastName: string
   email: string
   password: string
-  displayName: string
+  passwordConfirmation: string
   role: UserRole
 }
 
