@@ -4,9 +4,10 @@ import type { User, UserRole } from './types'
 export type AuthState = {
   user: User | null
   activeRole: UserRole | null
-  signIn: (email: string) => void
+  switching: boolean
+  signIn: (email: string, password: string) => Promise<void>
   signOut: () => void
-  switchRole: (role: UserRole) => void
+  switchRole: (role: UserRole) => Promise<void>
 }
 
 export const AuthContext = createContext<AuthState | null>(null)
