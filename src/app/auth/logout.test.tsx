@@ -2,9 +2,15 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useNavigate } from 'react-router-dom'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { login } from '../../api/session'
 import { App } from '../../App'
 import { AuthProvider } from './AuthProvider'
+
+vi.mock('../../api/session', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../api/session')>()),
+  login: vi.fn(),
+}))
 
 function BackButton() {
   const navigate = useNavigate()
@@ -28,9 +34,8 @@ describe('Выход из аккаунта', () => {
   beforeEach(() => {
     localStorage.clear()
     localStorage.setItem('accessToken', 'old-token')
-    localStorage.setItem('cb-last-role', 'TRAINER')
     localStorage.setItem('cb-session', JSON.stringify({
-      user: { email: 'ivan@example.com', firstName: 'Иван', lastName: 'Петров', roles: ['ATHLETE', 'TRAINER'] },
+      user: { id: '1', email: 'ivan@example.com', displayName: 'Иван Петров', roles: ['ATHLETE', 'TRAINER'] },
       activeRole: 'TRAINER',
     }))
   })
@@ -46,7 +51,6 @@ describe('Выход из аккаунта', () => {
     expect(await screen.findByRole('heading', { name: 'Войти' })).toBeInTheDocument()
     expect(localStorage.getItem('accessToken')).toBeNull()
     expect(localStorage.getItem('cb-session')).toBeNull()
-    expect(localStorage.getItem('cb-last-role')).toBeNull()
     expect(queryClient.getQueryData(['profile'])).toBeUndefined()
 
     await user.click(screen.getByRole('button', { name: 'Назад' }))
@@ -56,6 +60,12 @@ describe('Выход из аккаунта', () => {
   })
 
   it('после выхода другой пользователь входит без данных прошлого сеанса', async () => {
+    vi.mocked(login).mockResolvedValue({
+      accessToken: 'new-token',
+      tokenType: 'Bearer',
+      expiresAt: '2030-01-01T00:00:00Z',
+      user: { id: '2', email: 'athlete@example.com', displayName: 'Пётр Сидоров', roles: ['ATHLETE'], activeRole: 'ATHLETE' },
+    })
     const user = userEvent.setup()
     renderApp(new QueryClient())
 

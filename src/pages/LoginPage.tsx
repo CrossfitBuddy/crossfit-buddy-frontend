@@ -1,6 +1,8 @@
 import {LockOutlined, MailOutlined} from '@ant-design/icons'
-import {Button, Form, Input} from 'antd'
+import {Alert, Button, Form, Input} from 'antd'
+import {useState} from 'react'
 import {Link, useLocation, useNavigate} from 'react-router-dom'
+import {getApiErrorCode} from '../api/session'
 import {useAuth} from '../app/auth/useAuth'
 import './LoginPage.css'
 
@@ -11,13 +13,33 @@ type LoginValues = {
 
 const whiteLabel = (text: string) => <span className="text-white">{text}</span>
 
+const loginErrors: Record<string, string> = {
+  INVALID_CREDENTIALS: 'Неверный email или пароль. Повторите попытку',
+  ACCOUNT_DISABLED: 'Ваша учетная запись заблокирована. Обратитесь к администратору',
+}
+
 export function LoginPage() {
   const {signIn} = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
-  const submit = (values: LoginValues) => {
-    signIn(values.email)
+  const submit = async (values: LoginValues) => {
+    setLoading(true)
+    setError(null)
+    try {
+      await signIn(values.email, values.password)
+    } catch (reason) {
+      const code = getApiErrorCode(reason)
+      if (code === 'ROLE_NOT_ASSIGNED') {
+        navigate('/role-not-assigned', {replace: true})
+      } else {
+        setError((code && loginErrors[code]) ?? 'Не удалось выполнить вход. Попробуйте позже')
+      }
+      setLoading(false)
+      return
+    }
     const from = location.state?.from
     navigate(from ? `${from.pathname}${from.search}${from.hash}` : '/', {replace: true})
   }
@@ -26,6 +48,7 @@ export function LoginPage() {
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center bg-[#101914] px-6 py-10 text-white">
       <p className="login-brand">CrossfitBuddy</p>
       <h1 className="login-title">Войти</h1>
+      {error && <Alert type="error" showIcon title={error} className="!mt-6" />}
       <Form<LoginValues> layout="vertical" requiredMark={false} className="login-form" onFinish={submit}>
         <Form.Item
           name="email"
@@ -40,7 +63,7 @@ export function LoginPage() {
         <Form.Item name="password" label={whiteLabel('Пароль')} rules={[{required: true, message: 'Введите пароль'}]}>
           <Input.Password prefix={<LockOutlined/>} placeholder="Пароль" autoComplete="current-password"/>
         </Form.Item>
-        <Button type="primary" htmlType="submit" block size="large">
+        <Button type="primary" htmlType="submit" block size="large" loading={loading}>
           Войти
         </Button>
       </Form>
