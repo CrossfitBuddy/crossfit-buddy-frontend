@@ -51,6 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(readSession)
   const [switching, setSwitching] = useState(false)
   const switchingRef = useRef(false)
+  const generation = useRef(0)
 
   const saveSession = useCallback((next: Session | null, token: string | null) => {
     writeStorage(ACCESS_TOKEN_KEY, token)
@@ -64,27 +65,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [saveSession])
 
   const signOut = useCallback(() => {
+    generation.current++
+    switchingRef.current = false
+    setSwitching(false)
     queryClient.clear()
     saveSession(null, null)
   }, [queryClient, saveSession])
 
   const switchRole = useCallback(async (role: UserRole) => {
-    if (!session || switchingRef.current || role === session.activeRole) return
-    if (!session.user.roles.includes(role)) return
+    if (!session || switchingRef.current || role === session.activeRole) return false
+    if (!session.user.roles.includes(role)) return false
+    const current = generation.current
     switchingRef.current = true
     setSwitching(true)
     try {
       const response = await switchActiveRole(role)
+      if (current !== generation.current) return false
       queryClient.clear()
       saveSession(toSession(response), response.accessToken)
+      return true
     } catch (error) {
-      if (getApiErrorStatus(error) === 401) saveSession(null, null)
+      if (current !== generation.current) return false
+      if (getApiErrorStatus(error) === 401) signOut()
       throw error
     } finally {
-      switchingRef.current = false
-      setSwitching(false)
+      if (current === generation.current) {
+        switchingRef.current = false
+        setSwitching(false)
+      }
     }
-  }, [session, queryClient, saveSession])
+  }, [session, queryClient, saveSession, signOut])
 
   const value = useMemo(
     () => ({

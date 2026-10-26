@@ -7,7 +7,7 @@ export type AuthState = {
   switching: boolean
   signIn: (email: string, password: string) => Promise<void>
   signOut: () => void
-  switchRole: (role: UserRole) => Promise<void>
+  switchRole: (role: UserRole) => Promise<boolean>
 }
 
 export const AuthContext = createContext<AuthState | null>(null)

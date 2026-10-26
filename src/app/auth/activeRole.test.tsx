@@ -1,10 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { App as AntApp } from 'antd'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { switchActiveRole } from '../../api/session'
+import type { AuthResponse } from '../../api/session'
 import { App } from '../../App'
 import { AuthProvider } from './AuthProvider'
 import type { UserRole } from './types'
@@ -34,6 +35,13 @@ function renderProfile() {
       </AntApp>
     </QueryClientProvider>,
   )
+}
+
+const trainerResponse: AuthResponse = {
+  accessToken: 'new-token',
+  tokenType: 'Bearer',
+  expiresAt: '2030-01-01T00:00:00Z',
+  user: { id: '1', email: 'ivan@example.com', displayName: 'Иван Петров', roles: ['ATHLETE', 'TRAINER'], activeRole: 'TRAINER' },
 }
 
 describe('Переключение активной роли', () => {
@@ -83,5 +91,24 @@ describe('Переключение активной роли', () => {
 
     expect(await screen.findByText('Администратор')).toBeInTheDocument()
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+  })
+
+  it('игнорирует ответ на смену роли, пришедший после выхода', async () => {
+    seedSession(['ATHLETE', 'TRAINER'], 'ATHLETE')
+    let resolveSwitch: (response: AuthResponse) => void = () => {}
+    vi.mocked(switchActiveRole).mockReturnValue(new Promise((resolve) => { resolveSwitch = resolve }))
+    const user = userEvent.setup()
+    renderProfile()
+
+    await user.click(await screen.findByRole('combobox'))
+    await user.click(await screen.findByText('Тренер'))
+    await user.click(screen.getByRole('button', { name: 'Выйти' }))
+    expect(await screen.findByRole('heading', { name: 'Войти' })).toBeInTheDocument()
+
+    await act(async () => { resolveSwitch(trainerResponse) })
+
+    expect(screen.getByRole('heading', { name: 'Войти' })).toBeInTheDocument()
+    expect(localStorage.getItem('accessToken')).toBeNull()
+    expect(localStorage.getItem('cb-session')).toBeNull()
   })
 })

@@ -27,8 +27,7 @@ export function ProfilePage() {
 
   const changeRole = async (role: UserRole) => {
     try {
-      await switchRole(role)
-      navigate('/', { replace: true })
+      if (await switchRole(role)) navigate('/', { replace: true })
     } catch (error) {
       message.error(
         getApiErrorCode(error) === 'ACCESS_DENIED'
