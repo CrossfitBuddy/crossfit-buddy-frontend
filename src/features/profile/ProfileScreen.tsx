@@ -9,11 +9,9 @@ import { roleLabels, toUpdateRequest } from './profileValues'
 import type { ProfileFormValues } from './profileValues'
 import type { ProfileApi, ProfileRole } from './types'
 
-
-
 export function ProfileScreen({ api = profileApi, accountKey, activeRole, roles, onRoleChange, onSignOut }: {
   api?: ProfileApi; accountKey?: string; activeRole?: ProfileRole; roles?: ProfileRole[]
-  onRoleChange?: (role: ProfileRole) => void; onSignOut?: () => void
+  onRoleChange?: (role: ProfileRole) => Promise<boolean>; onSignOut?: () => void
 }) {
   const client = useQueryClient()
   const profileKey = ['profile', accountKey ?? 'preview']
@@ -31,8 +29,11 @@ export function ProfileScreen({ api = profileApi, accountKey, activeRole, roles,
     onSettled: () => { busy.current = false },
   })
   const role = useMutation({
-    mutationFn: async (value: ProfileRole) => { onRoleChange?.(value); return api.switchRole(value) },
-    onSuccess: (profile) => { client.setQueryData(profileKey, profile) },
+    mutationFn: async (value: ProfileRole) => {
+      if (onRoleChange) { await onRoleChange(value); return }
+      return api.switchRole(value)
+    },
+    onSuccess: (profile) => { if (profile) client.setQueryData(profileKey, profile) },
     onSettled: () => { busy.current = false },
   })
   const profile = query.data ? { ...query.data, activeRole: activeRole ?? query.data.activeRole, roles: roles ?? query.data.roles } : undefined
@@ -66,7 +67,7 @@ export function ProfileScreen({ api = profileApi, accountKey, activeRole, roles,
       {!editing && <div className="mb-8 flex flex-col items-center">
         <Avatar size={88} className="!bg-[#20321b] !text-3xl !font-bold !text-lime-400">{profile.firstName?.[0]}{profile.lastName?.[0]}</Avatar>
         <h2 className="mt-4 max-w-full break-words text-center text-2xl font-bold">{[profile.firstName, profile.lastName].filter(Boolean).join(' ') || 'Пользователь'}</h2>
-        {profile.roles.length > 1 ? <Select<ProfileRole> aria-label="Активная роль" className="mt-3 !w-40" options={profile.roles.map((value) => ({ value, label: roleLabels[value] }))} value={profile.activeRole} onChange={switchRole} disabled={role.isPending} loading={role.isPending} /> : <p className="mt-3 rounded-full bg-[#20321b] px-5 py-1 text-sm font-bold text-lime-400">{roleLabels[profile.activeRole]}</p>}
+        {!profile.roles.includes('ADMIN') && profile.roles.includes('ATHLETE') && profile.roles.includes('TRAINER') ? <Select<ProfileRole> aria-label="Активная роль" className="mt-3 !w-40" options={profile.roles.map((value) => ({ value, label: roleLabels[value] }))} value={profile.activeRole} onChange={switchRole} disabled={role.isPending} loading={role.isPending} /> : <p className="mt-3 rounded-full bg-[#20321b] px-5 py-1 text-sm font-bold text-lime-400">{roleLabels[profile.activeRole]}</p>}
         {role.isPending && <p role="status" className="mt-2 text-sm text-stone-400">Переключение роли…</p>}
       </div>}
       {saved && <div role="status" className="mb-5"><Alert type="success" showIcon title="Изменения сохранены" /></div>}

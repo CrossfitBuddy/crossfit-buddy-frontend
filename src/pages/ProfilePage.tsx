@@ -1,5 +1,4 @@
 import { useMemo } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../app/auth/useAuth'
 import { createMockProfileApi, initialProfile } from '../features/profile/mockProfileApi'
@@ -8,13 +7,15 @@ import { ProfileScreen } from '../features/profile/ProfileScreen'
 export function ProfilePage() {
   const { user, activeRole, switchRole, signOut } = useAuth()
   const navigate = useNavigate()
-  const client = useQueryClient()
   const api = useMemo(() => createMockProfileApi({ profile: {
-    ...initialProfile, email: user?.email ?? initialProfile.email,
-    roles: user?.roles ?? initialProfile.roles,
-    firstName: user?.firstName ?? null, lastName: user?.lastName ?? null,
-  } }), [user?.email, user?.firstName, user?.lastName, user?.roles])
+    ...initialProfile, id: user?.id ?? initialProfile.id, email: user?.email ?? initialProfile.email,
+  } }), [user?.id, user?.email])
   if (!user || !activeRole) return null
-  return <ProfileScreen key={user.email} accountKey={user.email} api={api} activeRole={activeRole} roles={user.roles}
-    onRoleChange={switchRole} onSignOut={() => { signOut(); client.clear(); navigate('/login', { replace: true }) }} />
+  return <ProfileScreen key={user.id} accountKey={user.id} api={api} activeRole={activeRole} roles={user.roles}
+    onRoleChange={async (role) => {
+      const changed = await switchRole(role)
+      if (changed) navigate('/', { replace: true })
+      return changed
+    }}
+    onSignOut={() => { signOut(); navigate('/login', { replace: true }) }} />
 }
