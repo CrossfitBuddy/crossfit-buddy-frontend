@@ -27,3 +27,5 @@ class ResizeObserverMock {
 }
 
 window.ResizeObserver = ResizeObserverMock
+
+window.scrollTo = () => {}

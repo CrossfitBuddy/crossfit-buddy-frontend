@@ -62,7 +62,7 @@ describe('Переключение активной роли', () => {
     renderProfile()
 
     expect(await screen.findByRole('link', { name: 'История' })).toBeInTheDocument()
-    await user.click(screen.getByRole('combobox'))
+    await user.click(await screen.findByRole('combobox'))
     await user.click(await screen.findByText('Тренер'))
 
     expect(await screen.findByRole('link', { name: 'Атлеты' })).toBeInTheDocument()
@@ -80,7 +80,7 @@ describe('Переключение активной роли', () => {
     await user.click(await screen.findByRole('combobox'))
     await user.click(await screen.findByText('Тренер'))
 
-    expect(await screen.findByText('Не удалось сменить роль. Попробуйте ещё раз')).toBeInTheDocument()
+    expect(await screen.findByText('Не удалось переключить роль')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'История' })).toBeInTheDocument()
     expect(localStorage.getItem('accessToken')).toBe('old-token')
   })
