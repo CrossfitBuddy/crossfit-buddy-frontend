@@ -1,3 +1,7 @@
+vi.mock('../profile/avatarApi', async (importOriginal) => {
+  const module = await importOriginal<typeof import('../profile/avatarApi')>()
+  return { ...module, createAvatarApi: () => ({ getAvatar: async () => null, replaceAvatar: async () => {}, deleteAvatar: async () => {} }) }
+})
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
