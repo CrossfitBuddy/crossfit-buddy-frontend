@@ -27,6 +27,9 @@ export type PersonalProfile = {
 }
 
 export type ProfileResponse = PersonalProfile & {
+  displayName?: string
+  avatarUrl?: string | null
+  initials?: string
   id: string
   email: string
   roles: ProfileRole[]
@@ -41,7 +44,7 @@ export type UpdateProfileRequest = Omit<PersonalProfile, 'avatarKey'> & {
 }
 
 export type ProfileApi = {
-  getProfile: () => Promise<ProfileResponse>
+  getProfile: (signal?: AbortSignal) => Promise<ProfileResponse>
   updateProfile: (request: UpdateProfileRequest) => Promise<ProfileResponse>
   switchRole: (role: ProfileRole) => Promise<ProfileResponse>
 }

@@ -1,5 +1,7 @@
 import { Avatar, Button, Form, Input, InputNumber, Select } from 'antd'
 import type { Rule } from 'antd/es/form'
+import { useEffect } from 'react'
+import type { ProfileFieldError } from './profileApi'
 import { numberRules } from './profileValidation'
 import { fitnessOptions, genderOptions, isValidBirthDate, rxOptions, today, toFormValues } from './profileValues'
 import type { ProfileFormValues } from './profileValues'
@@ -13,15 +15,24 @@ const nameRules: Rule[] = [
 const textRules = (max: number): Rule[] => [{ max, message: `Максимум ${max} символов` }]
 const headingClass = 'mb-5 border-b border-stone-700 pb-3 text-lg font-bold text-lime-400'
 
-export function ProfileForm({ profile, saving, onSave, onCancel }: {
+export function ProfileForm({ profile, saving, onSave, onCancel, serverErrors, onValuesChange }: {
   profile: ProfileResponse
   saving: boolean
   onSave: (values: ProfileFormValues) => void
   onCancel: () => void
+  serverErrors?: ProfileFieldError[]
+  onValuesChange?: () => void
 }) {
+  const [form] = Form.useForm<ProfileFormValues>()
+  useEffect(() => {
+    if (serverErrors?.length) form.setFields(serverErrors.map(({ field, message }) => ({ name: field.split('.') as Parameters<typeof form.setFields>[0][number]['name'], errors: [message] })))
+  }, [serverErrors, form])
   return (
     <Form<ProfileFormValues>
       id="profile-edit"
+      form={form}
+      onValuesChange={onValuesChange}
+      onSubmitCapture={(event) => { if (saving) { event.preventDefault(); event.stopPropagation() } }}
       noValidate
       className="[&_.ant-form-item]:!mb-5 [&_.ant-input-data-count]:!text-stone-400"
       onReset={(event) => { event.preventDefault(); onCancel() }}

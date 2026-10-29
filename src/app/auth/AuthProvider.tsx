@@ -2,8 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { AuthContext } from './authContext'
-import type { AuthSession, UserRole } from './types'
+import type { AuthSession, User, UserRole } from './types'
 import { authApi, AuthError, authErrorMessage, isUnauthorized } from '../../features/auth/authApi'
+
 import type { AuthApi } from '../../features/auth/authApi'
 import { clearSession, readSession, writeSession } from './sessionStorage'
 
@@ -14,20 +15,25 @@ export function AuthProvider({ children, api = authApi }: { children: ReactNode;
   const [sessionError, setSessionError] = useState<string | null>(null)
   const [restoreAttempt, setRestoreAttempt] = useState(0)
   const generation = useRef(0)
+  const currentSession = useRef<AuthSession | null>(null)
   const [switching, setSwitching] = useState(false)
   const switchingRef = useRef(false)
+
   const queryClient = useQueryClient()
 
   const saveSession = useCallback((next: AuthSession) => {
     writeSession(next)
+    currentSession.current = next
     queryClient.clear()
     setSession(next)
   }, [queryClient])
 
   const signOut = useCallback(() => {
     generation.current++
+    currentSession.current = null
     switchingRef.current = false
     setSwitching(false)
+
     clearSession()
     queryClient.clear()
     setSession(null)
@@ -92,6 +98,15 @@ export function AuthProvider({ children, api = authApi }: { children: ReactNode;
     }
   }, [api, session, saveSession, signOut])
 
+  const updateCurrentUser = useCallback((user: Pick<User, 'id' | 'email' | 'displayName'>) => {
+    const current = currentSession.current
+    if (!current || current.user.id !== user.id) return false
+    const next = { ...current, user: { ...current.user, ...user } }
+    writeSession(next)
+    currentSession.current = next
+    setSession(next)
+    return true
+  }, [])
   const value = useMemo(() => ({
     user: session?.user ?? null,
     activeRole: session?.user.activeRole ?? null,
@@ -99,8 +114,9 @@ export function AuthProvider({ children, api = authApi }: { children: ReactNode;
     restoring,
     sessionError,
     retrySession: () => { setRestoring(true); setSessionError(null); setRestoreAttempt((value) => value + 1) },
-    signIn, signOut, switchRole,
-  }), [session, switching, restoring, sessionError, signIn, signOut, switchRole])
+    signIn, signOut, switchRole, updateCurrentUser,
+  }), [session, switching, restoring, sessionError, signIn, signOut, switchRole, updateCurrentUser])
+
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
