@@ -51,7 +51,7 @@ export const toFormValues = (profile: ProfileResponse): ProfileFormValues => ({
 
 const nullableText = (value: string | null | undefined) => value?.trim() || null
 
-export function toUpdateRequest(values: ProfileFormValues, role: ProfileRole): UpdateProfileRequest {
+export function toUpdateRequest(values: ProfileFormValues, role: ProfileRole, current?: ProfileResponse): UpdateProfileRequest {
   return {
     firstName: nullableText(values.firstName),
     lastName: nullableText(values.lastName),
@@ -59,6 +59,8 @@ export function toUpdateRequest(values: ProfileFormValues, role: ProfileRole): U
     gender: values.gender ?? null,
     city: nullableText(values.city),
     about: nullableText(values.about),
+    ...(current?.roles.includes('ATHLETE') && current.athleteProfile ? { athleteProfile: current.athleteProfile } : {}),
+    ...(current?.roles.includes('TRAINER') && current.trainerProfile ? { trainerProfile: current.trainerProfile } : {}),
     ...(role === 'ATHLETE' ? { athleteProfile: {
       heightCm: values.athleteProfile.heightCm ?? null,
       weightKg: values.athleteProfile.weightKg ?? null,

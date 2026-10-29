@@ -20,8 +20,8 @@ export const initialProfile: ProfileResponse = {
   },
 }
 
-export function createMockProfileApi(options: { delay?: number; failLoad?: boolean; failSave?: boolean; profile?: ProfileResponse } = {}): ProfileApi {
-  let profile = structuredClone(options.profile ?? initialProfile)
+export function createMockProfileApi(options: { delay?: number; failLoad?: boolean; failSave?: boolean } = {}): ProfileApi {
+  let profile = structuredClone(initialProfile)
   const wait = () => new Promise<void>((resolve) => setTimeout(resolve, options.delay ?? 600))
 
   return {
