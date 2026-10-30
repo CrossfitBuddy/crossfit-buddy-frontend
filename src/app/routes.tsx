@@ -2,6 +2,7 @@ import { Dumbbell, History, House, Layers, ListChecks, UserRound, Users } from '
 import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { DashboardPage } from '../pages/DashboardPage'
+import { ExerciseEditorPage } from '../pages/ExerciseEditorPage'
 import { PlaceholderPage } from '../pages/PlaceholderPage'
 import { ProfilePage } from '../pages/ProfilePage'
 import type { UserRole } from './auth/types'
@@ -22,6 +23,8 @@ export const appRoutes: AppRoute[] = [
   { path: '/history', title: 'История', roles: ['ATHLETE'], element: <PlaceholderPage title="История" />, icon: History },
   { path: '/athletes', title: 'Атлеты', roles: ['TRAINER'], element: <PlaceholderPage title="Атлеты" />, icon: Users },
   { path: '/exercises', title: 'Упражнения', roles: ['ADMIN'], element: <PlaceholderPage title="Упражнения" />, icon: ListChecks },
+  { path: '/exercises/new', title: 'Новое упражнение', roles: ['ADMIN'], element: <ExerciseEditorPage /> },
+  { path: '/exercises/:id/edit', title: 'Редактирование упражнения', roles: ['ADMIN'], element: <ExerciseEditorPage /> },
   { path: '/formats', title: 'Форматы', roles: ['ADMIN'], element: <PlaceholderPage title="Форматы" />, icon: Layers },
   { path: '/profile', title: 'Профиль', roles: allRoles, element: <ProfilePage />, icon: UserRound },
 ]
