@@ -6,6 +6,7 @@ import type { AuthSession, User, UserRole } from './types'
 import { authApi, AuthError, authErrorMessage, isUnauthorized } from '../../features/auth/authApi'
 
 import type { AuthApi } from '../../features/auth/authApi'
+import { resetSelection } from '../../features/exercises/selection'
 import { clearSession, readSession, writeSession } from './sessionStorage'
 
 export function AuthProvider({ children, api = authApi }: { children: ReactNode; api?: AuthApi }) {
@@ -35,6 +36,7 @@ export function AuthProvider({ children, api = authApi }: { children: ReactNode;
     setSwitching(false)
 
     clearSession()
+    resetSelection()
     queryClient.clear()
     setSession(null)
     setSessionError(null)
