@@ -3,6 +3,7 @@ import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { DashboardPage } from '../pages/DashboardPage'
 import { ExerciseCatalog } from '../features/exercises/ExerciseCatalog'
+import { RoundForm } from '../features/exercises/RoundForm'
 import { PlaceholderPage } from '../pages/PlaceholderPage'
 import { ProfilePage } from '../pages/ProfilePage'
 import type { UserRole } from './auth/types'
@@ -23,6 +24,7 @@ export const appRoutes: AppRoute[] = [
   { path: '/history', title: 'История', roles: ['ATHLETE'], element: <PlaceholderPage title="История" />, icon: History },
   { path: '/athletes', title: 'Атлеты', roles: ['TRAINER'], element: <PlaceholderPage title="Атлеты" />, icon: Users },
   { path: '/exercises', title: 'Упражнения', roles: allRoles, element: <ExerciseCatalog />, icon: ListChecks },
+  { path: '/round', title: 'Раунд', roles: allRoles, element: <RoundForm /> },
   { path: '/formats', title: 'Форматы', roles: ['ADMIN'], element: <PlaceholderPage title="Форматы" />, icon: Layers },
   { path: '/profile', title: 'Профиль', roles: allRoles, element: <ProfilePage />, icon: UserRound },
 ]
