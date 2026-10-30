@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Alert, App as AntApp, Button, Spin } from 'antd'
 import { useNavigate } from 'react-router-dom'
 import { ExerciseForm } from './ExerciseForm'
@@ -8,6 +8,7 @@ import type { Exercise, ExerciseApi } from './types'
 const LIST_PATH = '/exercises'
 
 export function ExerciseEditor({ id, api = exerciseApi }: { id?: string; api?: ExerciseApi }) {
+  const queryClient = useQueryClient()
   const navigate = useNavigate()
   const { message } = AntApp.useApp()
   const catalog = useQuery({ queryKey: ['exercise-catalog'], queryFn: api.getCatalog, retry: false })
@@ -20,6 +21,7 @@ export function ExerciseEditor({ id, api = exerciseApi }: { id?: string; api?: E
   const save = useMutation({
     mutationFn: (value: Exercise) => api.saveExercise(value, id),
     onSuccess: () => {
+      if (id) queryClient.removeQueries({ queryKey: ['exercise', id], exact: true })
       message.success('Упражнение сохранено')
       navigate(LIST_PATH)
     },
