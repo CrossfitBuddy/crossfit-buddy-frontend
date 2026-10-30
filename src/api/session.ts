@@ -27,8 +27,8 @@ export async function login(email: string, password: string): Promise<AuthRespon
   return data
 }
 
-export async function switchActiveRole(role: UserRole): Promise<AuthResponse> {
-  const { data } = await api.patch<AuthResponse>('/api/v1/auth/active-role', { role })
+export async function switchActiveRole(role: UserRole, accessToken?: string): Promise<AuthResponse> {
+  const { data } = await api.patch<AuthResponse>('/api/v1/auth/active-role', { role }, accessToken ? { headers: { Authorization: 'Bearer ' + accessToken } } : undefined)
   return data
 }
 
@@ -38,4 +38,9 @@ export function getApiErrorCode(error: unknown): string | undefined {
 
 export function getApiErrorStatus(error: unknown): number | undefined {
   return isAxiosError(error) ? error.response?.status : undefined
+}
+
+export async function getAccount(accessToken: string): Promise<AccountResponse> {
+  const { data } = await api.get<AccountResponse>('/api/v1/auth/me', { headers: { Authorization: 'Bearer ' + accessToken } })
+  return data
 }

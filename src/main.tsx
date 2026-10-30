@@ -6,6 +6,7 @@ import { App as AntApp, ConfigProvider } from 'antd'
 import ruRU from 'antd/locale/ru_RU'
 import { App } from './App'
 import { AuthProvider } from './app/auth/AuthProvider'
+import { RecoveryProvider } from './features/auth/passwordRecovery'
 import { crossfitBuddyTheme } from './app/designSystem'
 import './styles.css'
 
@@ -17,9 +18,9 @@ createRoot(document.getElementById('root')!).render(
       <ConfigProvider locale={ruRU} theme={crossfitBuddyTheme}>
         <AntApp>
           <AuthProvider>
-            <BrowserRouter>
+            <RecoveryProvider><BrowserRouter>
               <App />
-            </BrowserRouter>
+            </BrowserRouter></RecoveryProvider>
           </AuthProvider>
         </AntApp>
       </ConfigProvider>

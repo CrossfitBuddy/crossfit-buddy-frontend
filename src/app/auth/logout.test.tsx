@@ -2,15 +2,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useNavigate } from 'react-router-dom'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { login } from '../../api/session'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { App } from '../../App'
 import { AuthProvider } from './AuthProvider'
+import { writeSession } from './sessionStorage'
+import type { AuthSession } from './types'
 
-vi.mock('../../api/session', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../../api/session')>()),
-  login: vi.fn(),
-}))
+const initial: AuthSession = { accessToken: 'old-token', tokenType: 'Bearer', expiresAt: '2099-01-01T00:00:00Z', user: { id: 'test-account', email: 'ivan@example.com', displayName: 'Иван Петров', roles: ['ATHLETE', 'TRAINER'], activeRole: 'TRAINER' } }
+const api = { account: async () => initial.user, switchRole: async () => initial, login: async (email: string) => ({ ...initial, user: { ...initial.user, email, roles: ['ATHLETE' as const], activeRole: 'ATHLETE' as const } }) }
 
 function BackButton() {
   const navigate = useNavigate()
@@ -20,7 +19,7 @@ function BackButton() {
 function renderApp(queryClient: QueryClient) {
   render(
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
+      <AuthProvider api={api}>
         <MemoryRouter initialEntries={['/', '/profile']} initialIndex={1}>
           <BackButton />
           <App />
@@ -33,11 +32,8 @@ function renderApp(queryClient: QueryClient) {
 describe('Выход из аккаунта', () => {
   beforeEach(() => {
     localStorage.clear()
-    localStorage.setItem('accessToken', 'old-token')
-    localStorage.setItem('cb-session', JSON.stringify({
-      user: { id: '1', email: 'ivan@example.com', displayName: 'Иван Петров', roles: ['ATHLETE', 'TRAINER'] },
-      activeRole: 'TRAINER',
-    }))
+    writeSession(initial)
+    localStorage.setItem('cb-last-role', 'TRAINER')
   })
 
   it('очищает данные сеанса и не пускает назад на защищённый экран', async () => {
@@ -51,6 +47,7 @@ describe('Выход из аккаунта', () => {
     expect(await screen.findByRole('heading', { name: 'Войти' })).toBeInTheDocument()
     expect(localStorage.getItem('accessToken')).toBeNull()
     expect(localStorage.getItem('cb-session')).toBeNull()
+    expect(localStorage.getItem('cb-last-role')).toBeNull()
     expect(queryClient.getQueryData(['profile'])).toBeUndefined()
 
     await user.click(screen.getByRole('button', { name: 'Назад' }))
@@ -60,12 +57,6 @@ describe('Выход из аккаунта', () => {
   })
 
   it('после выхода другой пользователь входит без данных прошлого сеанса', async () => {
-    vi.mocked(login).mockResolvedValue({
-      accessToken: 'new-token',
-      tokenType: 'Bearer',
-      expiresAt: '2030-01-01T00:00:00Z',
-      user: { id: '2', email: 'athlete@example.com', displayName: 'Пётр Сидоров', roles: ['ATHLETE'], activeRole: 'ATHLETE' },
-    })
     const user = userEvent.setup()
     renderApp(new QueryClient())
 
