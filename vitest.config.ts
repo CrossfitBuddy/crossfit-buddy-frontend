@@ -6,6 +6,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     testTimeout: 15000,
+    maxWorkers: 2,
     setupFiles: ['./src/test/setup.ts'],
   },
 })
