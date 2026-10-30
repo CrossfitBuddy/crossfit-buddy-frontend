@@ -2,10 +2,15 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { App as AntApp } from 'antd'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 import { ExerciseEditor } from './ExerciseEditor'
 import { createMockExerciseApi, demoExercise, demoExerciseId } from './mockExerciseApi'
+
+function ExerciseList() {
+  const navigate = useNavigate()
+  return <><p>Список упражнений</p><button onClick={() => navigate(-1)}>Назад</button></>
+}
 
 function setup(id?: string) {
   const api = createMockExerciseApi(0)
@@ -17,7 +22,7 @@ function setup(id?: string) {
       <AntApp>
         <MemoryRouter initialEntries={[start]}>
           <Routes>
-            <Route path="/exercises" element={<p>Список упражнений</p>} />
+            <Route path="/exercises" element={<ExerciseList />} />
             <Route path={start} element={<ExerciseEditor id={id} api={api} />} />
           </Routes>
         </MemoryRouter>
@@ -141,6 +146,21 @@ describe('Форма упражнения', () => {
       expect.objectContaining({ name: 'Свинг гири двумя руками', metrics: demoExercise.metrics }),
       demoExerciseId,
     )
+  })
+
+  it('после сохранения и возврата назад показывает актуальное название', async () => {
+    const { api, user } = setup(demoExerciseId)
+    const getExercise = vi.spyOn(api, 'getExercise')
+    const name = await screen.findByLabelText('Название')
+    await user.clear(name)
+    await user.type(name, 'Новое название')
+    await waitFor(() => expect(saveButton()).toBeEnabled())
+    await user.click(saveButton())
+    await screen.findByText('Список упражнений')
+    getExercise.mockClear()
+    await user.click(screen.getByRole('button', { name: 'Назад' }))
+    await waitFor(() => expect(getExercise).toHaveResolvedWith(expect.objectContaining({ name: 'Новое название' })))
+    expect(await screen.findByLabelText('Название')).toHaveValue('Новое название')
   })
 
   it('отмена возвращает к списку без сохранения', async () => {
