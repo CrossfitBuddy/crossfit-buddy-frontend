@@ -1,11 +1,16 @@
+vi.mock('../../features/profile/profileApi', async (importOriginal) => {
+  const module = await importOriginal<typeof import('../../features/profile/profileApi')>()
+  return { ...module, createProfileApi: () => ({ getProfile: async () => ({ ...initialProfile, id: readSession()?.user.id, email: readSession()?.user.email }), updateProfile: async () => initialProfile }) }
+})
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useNavigate } from 'react-router-dom'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from '../../App'
 import { AuthProvider } from './AuthProvider'
-import { writeSession } from './sessionStorage'
+import { writeSession, readSession } from './sessionStorage'
+import { initialProfile } from '../../features/profile/mockProfileApi'
 import type { AuthSession } from './types'
 
 const initial: AuthSession = { accessToken: 'old-token', tokenType: 'Bearer', expiresAt: '2099-01-01T00:00:00Z', user: { id: 'test-account', email: 'ivan@example.com', displayName: 'Иван Петров', roles: ['ATHLETE', 'TRAINER'], activeRole: 'TRAINER' } }

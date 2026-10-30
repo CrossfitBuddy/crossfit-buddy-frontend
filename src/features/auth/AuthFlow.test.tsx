@@ -13,6 +13,14 @@ import { RecoveryProvider } from './passwordRecovery'
 import type { RecoveryApi } from './recoveryContext'
 import { writeSession } from '../../app/auth/sessionStorage'
 
+vi.mock('../profile/profileApi', async (importOriginal) => {
+  const module = await importOriginal<typeof import('../profile/profileApi')>()
+  const { initialProfile } = await import('../profile/mockProfileApi')
+  return { ...module, createProfileApi: () => ({
+    getProfile: vi.fn().mockResolvedValue({ ...initialProfile, id: 'account-1', email: 'review@example.com', firstName: 'Анна', lastName: 'Рябова' }),
+    updateProfile: vi.fn(),
+  }) }
+})
 const session: AuthSession = {
   accessToken: 'test-token', tokenType: 'Bearer', expiresAt: '2099-01-01T00:00:00Z',
   user: { id: 'account-1', email: 'review@example.com', displayName: 'Анна Рябова', roles: ['ATHLETE', 'TRAINER'], activeRole: 'ATHLETE' },

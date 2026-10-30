@@ -77,7 +77,7 @@ describe('Профиль', () => {
     expect(updateProfile).not.toHaveBeenCalled()
   })
 
-  it('сохраняет изменения, обрезает пробелы и не отправляет поля другой роли', async () => {
+  it('сохраняет изменения, обрезает пробелы и сохраняет данные второй роли', async () => {
     const mock = createMockProfileApi({ delay: 0 })
     const updateProfile = vi.fn(mock.updateProfile)
     const { user } = setup({ ...mock, updateProfile })
@@ -89,7 +89,7 @@ describe('Профиль', () => {
     expect(screen.getByText('Изменения сохранены')).toBeInTheDocument()
     expect(updateProfile).toHaveBeenCalledTimes(1)
     expect(updateProfile.mock.calls[0][0]).toMatchObject({ firstName: 'Анна', athleteProfile: { heightCm: 180 } })
-    expect(updateProfile.mock.calls[0][0]).not.toHaveProperty('trainerProfile')
+    expect(updateProfile.mock.calls[0][0]).toHaveProperty('trainerProfile', initialProfile.trainerProfile)
     expect(updateProfile.mock.calls[0][0]).not.toHaveProperty('email')
     await edit(user)
     expect(screen.queryByText('Изменения сохранены')).not.toBeInTheDocument()
@@ -208,7 +208,7 @@ describe('Профиль', () => {
     expect(await screen.findByText('0 лет')).toBeInTheDocument()
     expect(updateProfile).toHaveBeenCalledTimes(1)
     expect(updateProfile.mock.calls[0][0]).toMatchObject({ trainerProfile: { experienceYears: 0 } })
-    expect(updateProfile.mock.calls[0][0]).not.toHaveProperty('athleteProfile')
+    expect(updateProfile.mock.calls[0][0]).toHaveProperty('athleteProfile', initialProfile.athleteProfile)
     expect(updateProfile.mock.calls[0][0]).not.toHaveProperty('avatarKey')
   })
 })
