@@ -1,3 +1,8 @@
+vi.mock('../../features/profile/profileApi', async (importOriginal) => {
+  const module = await importOriginal<typeof import('../../features/profile/profileApi')>()
+  const { initialProfile } = await import('../../features/profile/mockProfileApi')
+  return { ...module, createProfileApi: () => ({ getProfile: async () => ({ ...initialProfile, id: readSession()?.user.id, email: readSession()?.user.email }), updateProfile: async () => initialProfile }) }
+})
 import { writeSession, readSession } from './sessionStorage'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, render, screen } from '@testing-library/react'
