@@ -1,112 +1,106 @@
-import { useQueryClient } from '@tanstack/react-query'
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { ACCESS_TOKEN_KEY } from '../../api/http'
-import { getApiErrorStatus, login, switchActiveRole } from '../../api/session'
-import type { AuthResponse } from '../../api/session'
+import { useQueryClient } from '@tanstack/react-query'
 import { AuthContext } from './authContext'
-import type { User, UserRole } from './types'
+import type { AuthSession, UserRole } from './types'
+import { authApi, AuthError, authErrorMessage, isUnauthorized } from '../../features/auth/authApi'
+import type { AuthApi } from '../../features/auth/authApi'
+import { clearSession, readSession, writeSession } from './sessionStorage'
 
-type Session = {
-  user: User
-  activeRole: UserRole
-}
-
-const SESSION_KEY = 'cb-session'
-
-const readStorage = (key: string) => {
-  try {
-    return localStorage.getItem(key)
-  } catch {
-    return null
-  }
-}
-
-const writeStorage = (key: string, value: string | null) => {
-  try {
-    if (value === null) localStorage.removeItem(key)
-    else localStorage.setItem(key, value)
-  } catch {
-    return
-  }
-}
-
-const readSession = (): Session | null => {
-  const raw = readStorage(SESSION_KEY)
-  if (!raw || !readStorage(ACCESS_TOKEN_KEY)) return null
-  try {
-    return JSON.parse(raw) as Session
-  } catch {
-    return null
-  }
-}
-
-const toSession = ({ user }: AuthResponse): Session => ({
-  user: { id: user.id, email: user.email, displayName: user.displayName, roles: user.roles },
-  activeRole: user.activeRole,
-})
-
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const queryClient = useQueryClient()
-  const [session, setSession] = useState<Session | null>(readSession)
+export function AuthProvider({ children, api = authApi }: { children: ReactNode; api?: AuthApi }) {
+  const [initial] = useState(readSession)
+  const [session, setSession] = useState<AuthSession | null>(null)
+  const [restoring, setRestoring] = useState(Boolean(initial))
+  const [sessionError, setSessionError] = useState<string | null>(null)
+  const [restoreAttempt, setRestoreAttempt] = useState(0)
+  const generation = useRef(0)
   const [switching, setSwitching] = useState(false)
   const switchingRef = useRef(false)
-  const generation = useRef(0)
+  const queryClient = useQueryClient()
 
-  const saveSession = useCallback((next: Session | null, token: string | null) => {
-    writeStorage(ACCESS_TOKEN_KEY, token)
-    writeStorage(SESSION_KEY, next ? JSON.stringify(next) : null)
+  const saveSession = useCallback((next: AuthSession) => {
+    writeSession(next)
+    queryClient.clear()
     setSession(next)
-  }, [])
-
-  const signIn = useCallback(async (email: string, password: string) => {
-    const response = await login(email, password)
-    saveSession(toSession(response), response.accessToken)
-  }, [saveSession])
+  }, [queryClient])
 
   const signOut = useCallback(() => {
     generation.current++
     switchingRef.current = false
     setSwitching(false)
+    clearSession()
     queryClient.clear()
-    saveSession(null, null)
-  }, [queryClient, saveSession])
+    setSession(null)
+    setSessionError(null)
+    setRestoring(false)
+  }, [queryClient])
+
+  useEffect(() => {
+    if (!initial) return
+    let cancelled = false
+    const currentGeneration = generation.current
+    api.account(initial.accessToken).then((user) => {
+      if (cancelled || currentGeneration !== generation.current) return
+      if (Date.parse(initial.expiresAt) <= Date.now()) { signOut(); return }
+      saveSession({ ...initial, user })
+      setSessionError(null)
+    }).catch((error: unknown) => {
+      if (cancelled || currentGeneration !== generation.current) return
+      if (isUnauthorized(error) || (error instanceof AuthError && ['ACCOUNT_DISABLED', 'ACCESS_DENIED'].includes(error.code))) signOut()
+      else setSessionError(authErrorMessage(error))
+    }).finally(() => {
+      if (!cancelled && currentGeneration === generation.current) setRestoring(false)
+    })
+    return () => { cancelled = true }
+  }, [api, initial, restoreAttempt, saveSession, signOut])
+
+  useEffect(() => {
+    if (!session) return
+    const timer = window.setTimeout(signOut, Math.min(Date.parse(session.expiresAt) - Date.now(), 2147483647))
+    return () => window.clearTimeout(timer)
+  }, [session, signOut])
+
+  const signIn = useCallback(async (email: string, password: string) => {
+    const currentGeneration = ++generation.current
+    const response = await api.login(email, password)
+    if (currentGeneration !== generation.current) return
+    saveSession(response)
+    setSessionError(null)
+    setRestoring(false)
+  }, [api, saveSession])
 
   const switchRole = useCallback(async (role: UserRole) => {
-    if (!session || switchingRef.current || role === session.activeRole) return false
-    if (!session.user.roles.includes(role)) return false
-    const current = generation.current
+    if (!session || switchingRef.current || role === session.user.activeRole) return false
+    if (!session.user.roles.includes(role) || session.user.roles.includes('ADMIN')) return false
+    const currentGeneration = generation.current
     switchingRef.current = true
     setSwitching(true)
     try {
-      const response = await switchActiveRole(role)
-      if (current !== generation.current) return false
-      queryClient.clear()
-      saveSession(toSession(response), response.accessToken)
+      const response = await api.switchRole(role, session.accessToken)
+      if (currentGeneration !== generation.current) return false
+      saveSession(response)
       return true
     } catch (error) {
-      if (current !== generation.current) return false
-      if (getApiErrorStatus(error) === 401) signOut()
+      if (currentGeneration !== generation.current) return false
+      if (isUnauthorized(error) || (error instanceof AuthError && error.code === 'ACCOUNT_DISABLED')) signOut()
       throw error
     } finally {
-      if (current === generation.current) {
+      if (currentGeneration === generation.current) {
         switchingRef.current = false
         setSwitching(false)
       }
     }
-  }, [session, queryClient, saveSession, signOut])
+  }, [api, session, saveSession, signOut])
 
-  const value = useMemo(
-    () => ({
-      user: session?.user ?? null,
-      activeRole: session?.activeRole ?? null,
-      switching,
-      signIn,
-      signOut,
-      switchRole,
-    }),
-    [session, switching, signIn, signOut, switchRole],
-  )
+  const value = useMemo(() => ({
+    user: session?.user ?? null,
+    activeRole: session?.user.activeRole ?? null,
+    switching,
+    restoring,
+    sessionError,
+    retrySession: () => { setRestoring(true); setSessionError(null); setRestoreAttempt((value) => value + 1) },
+    signIn, signOut, switchRole,
+  }), [session, switching, restoring, sessionError, signIn, signOut, switchRole])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

@@ -55,7 +55,7 @@ export function ProfileScreen({ api = profileApi, accountKey, activeRole, roles,
 
   return <div className="min-h-[calc(100dvh-6rem)] bg-[#101914] px-6 pb-8 pt-10 text-white">
     <header className="mb-7">
-      <p className="text-sm font-bold text-lime-400">CrossfitBuddy</p>
+      <p className="text-sm font-bold uppercase tracking-[0.24em] text-[#a3e635]">CrossfitBuddy</p>
       <div className="mt-3 flex items-center gap-2">
         {editing && <Button type="text" className="!text-white" htmlType="reset" form="profile-edit" aria-label="Назад к профилю" icon={<ArrowLeft size={20} />} disabled={save.isPending} />}
         <h1 className={editing ? 'min-w-0 text-2xl font-black' : 'text-4xl font-black'}>{editing ? 'Редактирование' : 'Профиль'}</h1>

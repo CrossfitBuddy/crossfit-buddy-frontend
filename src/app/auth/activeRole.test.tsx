@@ -1,3 +1,4 @@
+import { writeSession, readSession } from './sessionStorage'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -12,15 +13,13 @@ import type { UserRole } from './types'
 
 vi.mock('../../api/session', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../api/session')>()),
-  switchActiveRole: vi.fn(),
+  switchActiveRole: vi.fn(), getAccount: vi.fn(async () => readSession()!.user),
 }))
 
 function seedSession(roles: UserRole[], activeRole: UserRole) {
-  localStorage.setItem('accessToken', 'old-token')
-  localStorage.setItem('cb-session', JSON.stringify({
-    user: { id: '1', email: 'ivan@example.com', displayName: 'Иван Петров', roles },
-    activeRole,
-  }))
+  writeSession({ accessToken: 'old-token', tokenType: 'Bearer', expiresAt: '2099-01-01T00:00:00Z',
+    user: { id: '1', email: 'ivan@example.com', displayName: 'Иван Петров', roles, activeRole },
+  })
 }
 
 function renderProfile() {
@@ -67,7 +66,7 @@ describe('Переключение активной роли', () => {
 
     expect(await screen.findByRole('link', { name: 'Атлеты' })).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'История' })).not.toBeInTheDocument()
-    expect(switchActiveRole).toHaveBeenCalledWith('TRAINER')
+    expect(switchActiveRole).toHaveBeenCalledWith('TRAINER', 'old-token')
     expect(localStorage.getItem('accessToken')).toBe('new-token')
   })
 

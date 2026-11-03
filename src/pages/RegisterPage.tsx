@@ -62,7 +62,7 @@ export function RegisterPage() {
   if (sentTo) {
     return (
       <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center bg-[#101914] px-6 py-10 text-white">
-        <p className="text-sm font-bold text-lime-400">CrossfitBuddy</p>
+        <p className="text-sm font-bold uppercase tracking-[0.24em] text-[#a3e635]">CrossfitBuddy</p>
         <h1 className="mt-2 text-4xl font-black">Проверьте почту</h1>
         <p className="mt-4 text-stone-300">
           Мы отправили письмо на <span className="font-bold text-white">{sentTo}</span>. Перейдите по ссылке из письма, чтобы подтвердить аккаунт.
@@ -74,7 +74,7 @@ export function RegisterPage() {
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center bg-[#101914] px-6 py-10 text-white">
-      <p className="text-sm font-bold text-lime-400">CrossfitBuddy</p>
+      <p className="text-sm font-bold uppercase tracking-[0.24em] text-[#a3e635]">CrossfitBuddy</p>
       <h1 className="mt-2 text-4xl font-black">Регистрация</h1>
 
       {register.isError && <div className="mt-6"><Alert type="error" showIcon title={getErrorMessage(register.error)} /></div>}

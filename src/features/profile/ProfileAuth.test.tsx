@@ -1,3 +1,4 @@
+import { writeSession, readSession } from '../../app/auth/sessionStorage'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -9,14 +10,14 @@ import type { UserRole } from '../../app/auth/types'
 import { switchActiveRole } from '../../api/session'
 
 vi.mock('../../api/session', async (importOriginal) => ({
-  ...await importOriginal<typeof import('../../api/session')>(), switchActiveRole: vi.fn(),
+  ...await importOriginal<typeof import('../../api/session')>(), switchActiveRole: vi.fn(), getAccount: vi.fn(async () => readSession()!.user),
 }))
 beforeEach(() => { localStorage.clear(); vi.mocked(switchActiveRole).mockReset() })
 function setup(roles: UserRole[] = ['ATHLETE', 'TRAINER']) {
-  localStorage.setItem('accessToken', 'old-token')
-  localStorage.setItem('cb-session', JSON.stringify({ user: {
+  writeSession({ accessToken: 'old-token', tokenType: 'Bearer', expiresAt: '2099-01-01T00:00:00Z', user: {
     id: 'profile-user', email: 'review@example.com', displayName: 'Иван Петров', roles,
-  }, activeRole: roles.includes('ADMIN') ? 'ADMIN' : roles[0] }))
+    activeRole: roles.includes('ADMIN') ? 'ADMIN' : roles[0],
+  } })
   const user = userEvent.setup()
   render(<QueryClientProvider client={new QueryClient()}><AuthProvider><MemoryRouter initialEntries={['/profile']}><App /></MemoryRouter></AuthProvider></QueryClientProvider>)
   return user
@@ -30,7 +31,7 @@ it('переключает роль через общий API, меняет ме
   await user.click(await screen.findByTitle('Тренер'))
   expect(await screen.findByRole('link', { name: 'Атлеты' })).toBeInTheDocument()
   expect(screen.queryByRole('link', { name: 'История' })).not.toBeInTheDocument()
-  expect(switchActiveRole).toHaveBeenCalledExactlyOnceWith('TRAINER')
+  expect(switchActiveRole).toHaveBeenCalledExactlyOnceWith('TRAINER', 'old-token')
   expect(localStorage.getItem('accessToken')).toBe('trainer-token')
   await user.click(screen.getByRole('link', { name: 'Профиль' }))
   expect(await screen.findByText('Тренерское')).toBeInTheDocument()
