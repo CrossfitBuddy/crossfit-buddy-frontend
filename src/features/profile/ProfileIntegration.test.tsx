@@ -1,3 +1,7 @@
+vi.mock('./avatarApi', async (importOriginal) => {
+  const module = await importOriginal<typeof import('./avatarApi')>()
+  return { ...module, createAvatarApi: () => ({ getAvatar: async () => null, replaceAvatar: async () => {}, deleteAvatar: async () => {} }) }
+})
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -120,4 +124,16 @@ describe('Интеграция профиля с общей сессией', () 
     expect(screen.queryByRole('link', { name: 'История' })).not.toBeInTheDocument()
     await waitFor(() => expect(client.getQueryData(['profile', initialProfile.id, 'TRAINER'])).toBeDefined())
   })
+})
+
+it('при выходе удаляет токен, сессию и кэш профиля и аватара', async () => {
+  const { user, client } = setup()
+  await screen.findByRole('button', { name: 'Редактировать профиль' })
+  client.setQueryData(['avatar', 'previous-account'], new Blob(['private-image'], { type: 'image/png' }))
+  await user.click(screen.getByRole('button', { name: 'Выйти' }))
+  expect(await screen.findByRole('button', { name: 'Войти' })).toBeInTheDocument()
+  expect(localStorage.getItem('accessToken')).toBeNull()
+  expect(localStorage.getItem('cb-auth-session')).toBeNull()
+  expect(client.getQueryData(['avatar', 'previous-account'])).toBeUndefined()
+  expect(client.getQueryData(['profile', initialProfile.id, 'ATHLETE'])).toBeUndefined()
 })

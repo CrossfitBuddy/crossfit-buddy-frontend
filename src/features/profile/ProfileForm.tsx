@@ -1,6 +1,7 @@
 import { Avatar, Button, Form, Input, InputNumber, Select } from 'antd'
 import type { Rule } from 'antd/es/form'
 import { useEffect } from 'react'
+import type { ReactNode } from 'react'
 import type { ProfileFieldError } from './profileApi'
 import { numberRules } from './profileValidation'
 import { fitnessOptions, genderOptions, isValidBirthDate, rxOptions, today, toFormValues } from './profileValues'
@@ -15,8 +16,9 @@ const nameRules: Rule[] = [
 const textRules = (max: number): Rule[] => [{ max, message: `Максимум ${max} символов` }]
 const headingClass = 'mb-5 border-b border-stone-700 pb-3 text-lg font-bold text-lime-400'
 
-export function ProfileForm({ profile, saving, onSave, onCancel, serverErrors, onValuesChange }: {
+export function ProfileForm({ profile, avatar, saving, onSave, onCancel, serverErrors, onValuesChange }: {
   profile: ProfileResponse
+  avatar?: ReactNode
   saving: boolean
   onSave: (values: ProfileFormValues) => void
   onCancel: () => void
@@ -44,7 +46,7 @@ export function ProfileForm({ profile, saving, onSave, onCancel, serverErrors, o
       scrollToFirstError
     >
       <div className="mb-7 flex justify-center">
-        <Avatar size={88} className="!bg-[#20321b] !text-3xl !font-bold !text-lime-400">{profile.firstName?.[0]}{profile.lastName?.[0]}</Avatar>
+        {avatar ?? <Avatar size={88} className="!bg-[#20321b] !text-3xl !font-bold !text-lime-400">{profile.firstName?.[0]}{profile.lastName?.[0]}</Avatar>}
       </div>
       <section>
         <h2 className={headingClass}>Личные данные</h2>

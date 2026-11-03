@@ -1,3 +1,7 @@
+vi.mock('../../features/profile/avatarApi', async (importOriginal) => {
+  const module = await importOriginal<typeof import('../../features/profile/avatarApi')>()
+  return { ...module, createAvatarApi: () => ({ getAvatar: async () => null, replaceAvatar: async () => {}, deleteAvatar: async () => {} }) }
+})
 vi.mock('../../features/profile/profileApi', async (importOriginal) => {
   const module = await importOriginal<typeof import('../../features/profile/profileApi')>()
   return { ...module, createProfileApi: () => ({ getProfile: async () => ({ ...initialProfile, id: readSession()?.user.id, email: readSession()?.user.email }), updateProfile: async () => initialProfile }) }
