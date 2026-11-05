@@ -1,43 +1,23 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { exerciseCategories, exerciseEquipment, exercises, filterExercises, groupByLetter } from './catalog'
-import type { Exercise } from './catalog'
-
-const tones: Record<string, string> = {
-  Грудь: '#65a30d',
-  Икры: '#4d7c0f',
-  Кардио: '#84cc16',
-  Ноги: '#3f6212',
-  Плечи: '#a3e635',
-  Пресс: '#166534',
-  Руки: '#14532d',
-  Спина: '#365314',
-}
-
-function Illustration({ exercise, large = false }: { exercise: Exercise; large?: boolean }) {
-  const size = large ? 160 : 56
-  return (
-    <svg width={size} height={size} viewBox="0 0 80 80" role="img" aria-label={`Иллюстрация: ${exercise.name}`} className="shrink-0 rounded-2xl">
-      <rect width="80" height="80" rx="16" fill={tones[exercise.category] ?? '#65a30d'} />
-      <rect x="18" y="34" width="44" height="12" rx="4" fill="#17200f" />
-      <rect x="12" y="28" width="8" height="24" rx="3" fill="#f7f7f5" />
-      <rect x="60" y="28" width="8" height="24" rx="3" fill="#f7f7f5" />
-    </svg>
-  )
-}
+import { Illustration } from './Illustration'
+import { addExercise, confirmSelection, movePending, removeLastPending, removePendingAt, useSelection } from './selection'
 
 export function ExerciseCatalog() {
+  const navigate = useNavigate()
+  const { pending } = useSelection()
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('all')
   const [equipment, setEquipment] = useState('all')
-  const [selected, setSelected] = useState<string[]>([])
   const [openedId, setOpenedId] = useState<string | null>(null)
   const visible = filterExercises(exercises, query, category, equipment)
   const groups = groupByLetter(visible)
   const opened = exercises.find((exercise) => exercise.id === openedId) ?? null
-
-  const toggle = (id: string) => {
-    setSelected((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
-  }
+  const picked = pending.flatMap((item) => {
+    const exercise = exercises.find((entry) => entry.id === item.exerciseId)
+    return exercise ? [{ ...item, exercise }] : []
+  })
 
   return (
     <div className="bg-[#f7f7f5] text-[#171c18]">
@@ -88,18 +68,18 @@ export function ExerciseCatalog() {
               <h2 className="mb-3 text-sm font-bold text-stone-400">{group.letter}</h2>
               <ul className="space-y-3">
                 {group.items.map((exercise) => {
-                  const chosen = selected.includes(exercise.id)
+                  const count = pending.filter((item) => item.exerciseId === exercise.id).length
                   return (
                     <li key={exercise.id} className="flex items-center gap-3 rounded-2xl bg-white p-3">
                       <Illustration exercise={exercise} />
                       <div className="min-w-0 flex-1">
                         <p className="font-bold">{exercise.name}</p>
                         <p className="text-sm text-stone-500">{exercise.category}</p>
-                        <div className="mt-2 flex gap-3 text-sm font-bold">
+                        <div className="mt-2 flex flex-wrap gap-3 text-sm font-bold">
                           <button type="button" className="text-lime-700" aria-label={`Подробнее ${exercise.name}`} onClick={() => setOpenedId(exercise.id)}>Подробнее</button>
-                          <button type="button" aria-pressed={chosen} aria-label={chosen ? `Выбрано ${exercise.name}` : `Выбрать ${exercise.name}`} className={chosen ? 'text-[#171c18]' : 'text-stone-500'} onClick={() => toggle(exercise.id)}>
-                            {chosen ? 'Выбрано' : 'Выбрать'}
-                          </button>
+                          <button type="button" className="text-lime-700" aria-label={`Выбрать ${exercise.name}`} onClick={() => addExercise(exercise.id)}>Выбрать</button>
+                          {count > 0 && <button type="button" className="text-stone-500" aria-label={`Снять ${exercise.name}`} onClick={() => removeLastPending(exercise.id)}>Снять</button>}
+                          {count > 0 && <span className="text-stone-500">{count}</span>}
                         </div>
                       </div>
                     </li>
@@ -108,8 +88,20 @@ export function ExerciseCatalog() {
               </ul>
             </section>
           ))}
-          <p className="mb-3 text-sm text-stone-500">Выбрано: {selected.length}</p>
-          <button type="button" className="h-11 w-full rounded-xl bg-[#65a30d] text-base font-bold text-[#17200f]">Готово</button>
+          {picked.length > 0 && (
+            <ol className="mb-4 space-y-2" aria-label="Выбранные упражнения">
+              {picked.map((item, index) => (
+                <li key={item.key} className="flex items-center gap-3 rounded-2xl bg-white px-3 py-2">
+                  <p className="min-w-0 flex-1 font-bold">{index + 1}. {item.exercise.name}</p>
+                  <button type="button" className="text-sm font-bold text-lime-700 disabled:text-stone-300" aria-label={`Выше ${index + 1} ${item.exercise.name}`} disabled={index === 0} onClick={() => movePending(index, -1)}>Выше</button>
+                  <button type="button" className="text-sm font-bold text-lime-700 disabled:text-stone-300" aria-label={`Ниже ${index + 1} ${item.exercise.name}`} disabled={index === picked.length - 1} onClick={() => movePending(index, 1)}>Ниже</button>
+                  <button type="button" className="text-sm font-bold text-stone-500" aria-label={`Убрать ${index + 1} ${item.exercise.name}`} onClick={() => removePendingAt(index)}>Убрать</button>
+                </li>
+              ))}
+            </ol>
+          )}
+          <p className="mb-3 text-sm text-stone-500">Выбрано: {pending.length}</p>
+          <button type="button" className="h-11 w-full rounded-xl bg-[#65a30d] text-base font-bold text-[#17200f]" onClick={() => { confirmSelection(); navigate('/round') }}>Готово</button>
         </div>
       )}
     </div>
