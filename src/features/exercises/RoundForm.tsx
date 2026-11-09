@@ -1,12 +1,26 @@
-import { Button, Modal } from 'antd'
+import { Button, InputNumber, Modal } from 'antd'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { exercises } from './catalog'
+import { exercises, type ExerciseParameter } from './catalog'
 import { Illustration } from './Illustration'
-import { removeRoundExercise, useSelection, type SelectedExercise } from './selection'
+import { removeRoundExercise, resetSelection, updateRoundParameter, useSelection, type RoundExercise } from './selection'
 
 type RoundFormProps = {
-  onConfirm?: (round: SelectedExercise[]) => void
+  onConfirm?: (round: RoundExercise[]) => void
+}
+
+function parameterError(item: RoundExercise, parameter: ExerciseParameter) {
+  const value = item.parameters[parameter.id]
+  if (value === undefined) return undefined
+  if (!Number.isFinite(value)) return 'Введите число.'
+  if (value < parameter.min || value > parameter.max) {
+    return `Введите значение от ${parameter.min} до ${parameter.max}.`
+  }
+  if (parameter.valueType === 'INTEGER' && !Number.isInteger(value)) return 'Введите целое число.'
+  if (parameter.precision !== undefined && value !== Number(value.toFixed(parameter.precision))) {
+    return `Не более ${parameter.precision} знаков после запятой.`
+  }
+  return undefined
 }
 
 export function RoundForm({ onConfirm }: RoundFormProps) {
@@ -18,6 +32,14 @@ export function RoundForm({ onConfirm }: RoundFormProps) {
     return exercise ? [{ ...item, exercise }] : []
   })
   const editing = items.find((item) => item.key === editingKey)
+  const hasInvalidParameters = items.some((item) => item.exercise.parameters.some((parameter) => parameterError(item, parameter)))
+  const closeSettings = () => setEditingKey(null)
+
+  const confirmRound = () => {
+    if (!onConfirm || !items.length || hasInvalidParameters) return
+    onConfirm(round)
+    resetSelection()
+  }
 
   return (
     <div className="bg-[#f7f7f5] text-[#171c18]">
@@ -57,13 +79,46 @@ export function RoundForm({ onConfirm }: RoundFormProps) {
           </ol>
         )}
         <Button block size="large" onClick={() => navigate('/exercises')}>Добавить упражнения</Button>
-        <Button type="primary" block size="large" disabled={!items.length || !onConfirm} onClick={() => onConfirm?.(round)}>
+        {hasInvalidParameters && <p role="alert" className="text-sm text-red-700">Проверьте значения в настройках упражнений.</p>}
+        <Button type="primary" block size="large" disabled={!items.length || !onConfirm || hasInvalidParameters} onClick={confirmRound}>
           Готово
         </Button>
       </div>
       {editing && (
-        <Modal open title={editing.exercise.name} footer={null} onCancel={() => setEditingKey(null)}>
-          <p>Параметры не заданы.</p>
+        <Modal
+          open
+          title={editing.exercise.name}
+          onCancel={closeSettings}
+          footer={<Button type="primary" onClick={closeSettings}>Закрыть</Button>}
+        >
+          <div className="space-y-4">
+            {editing.exercise.parameters.length === 0 && <p>Для этого упражнения нет параметров.</p>}
+            {editing.exercise.parameters.map((parameter) => {
+              const error = parameterError(editing, parameter)
+              const fieldId = `round-${editing.key}-${parameter.id}`
+              return (
+                <div key={parameter.id} className="space-y-1">
+                  <label className="block font-semibold" htmlFor={fieldId}>
+                    {parameter.name}{parameter.unit ? `, ${parameter.unit}` : ''}
+                  </label>
+                  <InputNumber
+                    id={fieldId}
+                    className="!w-full"
+                    value={editing.parameters[parameter.id] ?? null}
+                    controls={false}
+                    changeOnBlur={false}
+                    decimalSeparator=","
+                    step={parameter.valueType === 'INTEGER' ? 1 : 0.1}
+                    status={error ? 'error' : undefined}
+                    aria-invalid={Boolean(error)}
+                    aria-describedby={error ? `${fieldId}-error` : undefined}
+                    onChange={(value) => updateRoundParameter(editing.key, parameter.id, value)}
+                  />
+                  {error && <p id={`${fieldId}-error`} className="text-sm text-red-700">{error}</p>}
+                </div>
+              )
+            })}
+          </div>
         </Modal>
       )}
     </div>
