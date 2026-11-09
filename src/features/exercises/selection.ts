@@ -5,9 +5,13 @@ export type SelectedExercise = {
   exerciseId: string
 }
 
+export type RoundExercise = SelectedExercise & {
+  parameters: Record<string, number>
+}
+
 type SelectionState = {
   pending: SelectedExercise[]
-  round: SelectedExercise[]
+  round: RoundExercise[]
 }
 
 let nextKey = 1
@@ -58,11 +62,23 @@ export const movePending = (index: number, direction: -1 | 1) => {
 }
 
 export const confirmSelection = () => {
-  emit({ pending: [], round: [...state.round, ...state.pending] })
+  const added = state.pending.map((item) => ({ ...item, parameters: {} }))
+  emit({ pending: [], round: [...state.round, ...added] })
 }
 
 export const removeRoundExercise = (key: string) => {
   emit({ ...state, round: state.round.filter((item) => item.key !== key) })
+}
+
+export const updateRoundParameter = (key: string, parameterId: string, value: number | null) => {
+  const round = state.round.map((item) => {
+    if (item.key !== key) return item
+    const parameters = { ...item.parameters }
+    if (value === null) delete parameters[parameterId]
+    else parameters[parameterId] = value
+    return { ...item, parameters }
+  })
+  emit({ ...state, round })
 }
 
 export const useSelection = () => useSyncExternalStore(subscribe, getSelection, getSelection)
