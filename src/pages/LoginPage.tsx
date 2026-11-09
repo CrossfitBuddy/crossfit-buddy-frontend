@@ -1,13 +1,25 @@
 import { LockOutlined, MailOutlined } from '@ant-design/icons'
-import { Alert, Button, Form, Input } from 'antd'
+import { Alert, Button, ConfigProvider, Form, Input } from 'antd'
 import { useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../app/auth/useAuth'
+import { crossfitBuddyTheme } from '../app/designSystem'
 import { AuthError, authErrorMessage } from '../features/auth/authApi'
 import { returnAddress } from '../features/auth/validation'
 import './LoginPage.css'
 
 type LoginValues = { email: string; password: string }
+
+const loginSubmitTheme = {
+  components: {
+    Button: {
+      colorBgContainerDisabled: crossfitBuddyTheme.token?.colorPrimary,
+      colorTextDisabled: crossfitBuddyTheme.components?.Button?.primaryColor,
+      borderColorDisabled: 'transparent',
+      opacityLoading: 1,
+    },
+  },
+}
 
 export function LoginPage() {
   const { signIn } = useAuth()
@@ -47,7 +59,9 @@ export function LoginPage() {
         <Form.Item name="password" label={<span className="text-white">Пароль</span>} rules={[{ required: true, whitespace: true, message: 'Введите пароль' }]}>
           <Input.Password prefix={<LockOutlined />} placeholder="Пароль" autoComplete="current-password" />
         </Form.Item>
-        <Button type="primary" htmlType="submit" block size="large" loading={pending}>{pending ? 'Входим…' : 'Войти'}</Button>
+        <ConfigProvider theme={loginSubmitTheme}>
+          <Button type="primary" htmlType="submit" block size="large" loading={pending}>{pending ? 'Входим…' : 'Войти'}</Button>
+        </ConfigProvider>
       </Form>
     </div>
     <p className="mt-4 text-center"><Link to="/forgot-password" className={pending ? 'pointer-events-none text-stone-400' : 'login-link login-link--secondary'} tabIndex={pending ? -1 : undefined}>Забыли пароль?</Link></p>
