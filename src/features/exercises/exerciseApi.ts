@@ -44,9 +44,9 @@ function createRequest(value: Exercise) {
     data.set(prefix + '.metricsValueType', item.valueType === 'DECIMAL' ? 'FLOAT' : 'INTEGER')
     data.set(prefix + '.unit', item.unit)
   }
-  // Spring binds an empty form value to an empty collection; omitted record fields can be null.
-  if (!value.metrics.length) data.set('exercisesMetrics', '')
-  if (!value.equipment.length) data.set('exercisesEquipments', '')
+  // Spring form markers distinguish empty collections from omitted fields.
+  if (!value.metrics.length) data.set('_exercisesMetrics', 'on')
+  if (!value.equipment.length) data.set('_exercisesEquipments', 'on')
   value.metrics.forEach((item, index) => {
     const prefix = 'exercisesMetrics[' + index + ']'
     if (item.id) data.set(prefix + '.id', item.id)
@@ -56,7 +56,7 @@ function createRequest(value: Exercise) {
     const prefix = 'exercisesEquipments[' + index + ']'
     if (item.id) data.set(prefix + '.id', item.id)
     data.set(prefix + '.name', item.name)
-    if (!item.properties.length) data.set(prefix + '.propertiesRequests', '')
+    if (!item.properties.length) data.set('_' + prefix + '.propertiesRequests', 'on')
     item.properties.forEach((property, i) => addMeasure(prefix + '.propertiesRequests[' + i + ']', property))
   })
   return data
