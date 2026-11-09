@@ -78,7 +78,12 @@ export const exerciseApi: ExerciseApi = {
       metrics: (item.exercisesMetrics ?? []).map(measure), equipment: (item.exerciseEquipments ?? []).map(equipment), media: [] }
   },
   async saveExercise(value, id) {
-    if (id) throw new Error('Сервер пока не поддерживает сохранение изменений упражнения')
-    await api.post(root + '/set', createRequest(value))
+    const request = createRequest(value)
+    if (id) {
+      request.set('id', id)
+      await api.put(root + '/update', request)
+    } else {
+      await api.post(root + '/set', request)
+    }
   },
 }

@@ -3,7 +3,7 @@ import { api } from '../../api/http'
 import { exerciseApi } from './exerciseApi'
 import { demoExercise } from './mockExerciseApi'
 
-vi.mock('../../api/http', () => ({ api: { get: vi.fn(), post: vi.fn() } }))
+vi.mock('../../api/http', () => ({ api: { get: vi.fn(), post: vi.fn(), put: vi.fn() } }))
 beforeEach(() => vi.resetAllMocks())
 
 it('отправляет только оставшиеся строки формы с именами и типами полей бэкенда', async () => {
@@ -27,6 +27,9 @@ it('открывает нужное упражнение из списка и н
   }] })
   const item = await exerciseApi.getExercise('wanted')
   expect(item.name).toBe('Прыжок')
-  await expect(exerciseApi.saveExercise(item, 'wanted')).rejects.toThrow('сохранение изменений')
+  await exerciseApi.saveExercise(item, 'wanted')
+  const [path, body] = vi.mocked(api.put).mock.calls[0]
+  expect(path).toBe('/v1/general-exercises/update')
+  expect((body as FormData).get('id')).toBe('wanted')
   expect(api.post).not.toHaveBeenCalled()
 })
