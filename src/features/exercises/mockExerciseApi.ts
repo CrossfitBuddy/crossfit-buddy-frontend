@@ -3,6 +3,7 @@ import type { Exercise, ExerciseApi, ExerciseCatalog } from './types'
 export const demoExerciseId = '7d3c2a10-5b1e-4f0a-9c61-2f8e4b6a9d01'
 
 export const demoExercise: Exercise = {
+  category: 'STRENGTH',
   name: 'Свинг гири',
   description: 'Мах гирей двумя руками от бёдер до уровня груди за счёт разгибания таза.',
   media: [],
@@ -25,7 +26,7 @@ export const exerciseCatalog: ExerciseCatalog = {
     { name: 'Время', valueType: 'INTEGER', unit: 'сек' },
     { name: 'Дистанция', valueType: 'DECIMAL', unit: 'м' },
   ],
-  equipment: ['Гиря', 'Штанга', 'Гантели', 'Скакалка', 'Турник'],
+  equipment: ['Гиря', 'Штанга', 'Гантели', 'Скакалка', 'Турник'].map(name => ({ name, image: [], properties: [] })),
 }
 
 export function createMockExerciseApi(delay = 400): ExerciseApi {
@@ -49,5 +50,3 @@ export function createMockExerciseApi(delay = 400): ExerciseApi {
     },
   }
 }
-
-export const exerciseApi = createMockExerciseApi()
