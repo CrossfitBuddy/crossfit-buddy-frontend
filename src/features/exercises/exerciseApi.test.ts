@@ -33,3 +33,12 @@ it('открывает нужное упражнение из списка и н
   expect((body as FormData).get('id')).toBe('wanted')
   expect(api.post).not.toHaveBeenCalled()
 })
+
+it('отправляет маркеры пустых списков без пустых строк вместо объектов', async () => {
+  await exerciseApi.saveExercise({ ...demoExercise, metrics: [], equipment: [] })
+  const body = vi.mocked(api.post).mock.calls[0][1] as FormData
+  expect(body.get('_exercisesMetrics')).toBe('on')
+  expect(body.get('_exercisesEquipments')).toBe('on')
+  expect(body.has('exercisesMetrics')).toBe(false)
+  expect(body.has('exercisesEquipments')).toBe(false)
+})
