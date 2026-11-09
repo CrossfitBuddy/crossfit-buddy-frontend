@@ -61,4 +61,8 @@ export const confirmSelection = () => {
   emit({ pending: [], round: [...state.round, ...state.pending] })
 }
 
+export const removeRoundExercise = (key: string) => {
+  emit({ ...state, round: state.round.filter((item) => item.key !== key) })
+}
+
 export const useSelection = () => useSyncExternalStore(subscribe, getSelection, getSelection)
