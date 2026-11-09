@@ -4,6 +4,11 @@ import userEvent from '@testing-library/user-event'
 import { App as AntApp } from 'antd'
 import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
+import { uploadMedia, downloadMedia } from './mediaApi'
+vi.mock('./mediaApi', async (original) => ({
+  ...await original<typeof import('./mediaApi')>(),
+  uploadMedia: vi.fn(), downloadMedia: vi.fn(),
+}))
 import { ExerciseEditor } from './ExerciseEditor'
 import { createMockExerciseApi, demoExercise, demoExerciseId } from './mockExerciseApi'
 
@@ -12,8 +17,9 @@ function ExerciseList() {
   return <><p>Список упражнений</p><button onClick={() => navigate(-1)}>Назад</button></>
 }
 
-function setup(id?: string) {
+function setup(id?: string, initial?: typeof demoExercise) {
   const api = createMockExerciseApi(0)
+  if (initial) vi.spyOn(api, 'getExercise').mockResolvedValue(initial)
   const saveExercise = vi.spyOn(api, 'saveExercise')
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
   const start = id ? `/exercises/${id}/edit` : '/exercises/new'
@@ -54,6 +60,7 @@ describe('Форма упражнения', () => {
       name: 'Бёрпи',
       description: 'Упор лёжа, отжимание и прыжок вверх',
       media: [],
+      video: [],
       metrics: [],
       equipment: [],
     }, undefined)
@@ -115,17 +122,18 @@ describe('Форма упражнения', () => {
   })
 
   it('принимает только изображения JPG и PNG', async () => {
-    URL.createObjectURL = vi.fn(() => 'blob:preview')
+    vi.mocked(uploadMedia).mockResolvedValue('image-id')
+    vi.mocked(downloadMedia).mockResolvedValue({ downloadUrl: '/preview.png', expiresAt: new Date(Date.now() + 60000).toISOString() })
     const { container } = setup()
     await screen.findByLabelText('Название')
     const input = () => container.querySelector('input[type="file"]') as HTMLInputElement
 
     fireEvent.change(input(), { target: { files: [new File(['%PDF'], 'plan.pdf', { type: 'application/pdf' })] } })
     expect(await screen.findByText('Можно загрузить только JPG или PNG')).toBeInTheDocument()
-    expect(container.querySelectorAll('.ant-upload-list-item')).toHaveLength(0)
+    expect(uploadMedia).not.toHaveBeenCalled()
 
     fireEvent.change(input(), { target: { files: [new File(['png'], 'burpee.png', { type: 'image/png' })] } })
-    await waitFor(() => expect(container.querySelectorAll('.ant-upload-list-item')).toHaveLength(1))
+    expect(await screen.findByAltText('Изображение')).toHaveAttribute('src', '/preview.png')
   })
 
   it('при редактировании предзаполняет форму и сохраняет изменения', async () => {
@@ -193,4 +201,27 @@ it('передаёт оставшееся оборудование после у
     metrics: [],
     equipment: [expect.objectContaining({ name: 'Гиря', properties: [] })],
   }), demoExerciseId))
+})
+
+it('блокирует сохранение до окончания замены и сохраняет новый fileId при повторной попытке', async () => {
+  const { user, saveExercise } = setup(demoExerciseId, {
+    ...demoExercise, media: [{ uid: 'old', name: 'old.png', status: 'done', response: { fileId: 'old' } }],
+  })
+  vi.mocked(downloadMedia).mockResolvedValue({ downloadUrl: '/preview', expiresAt: new Date(Date.now() + 60000).toISOString() })
+  let finish!: (id: string) => void
+  vi.mocked(uploadMedia).mockClear().mockImplementationOnce(() => new Promise(resolve => { finish = resolve }))
+  saveExercise.mockRejectedValueOnce(new Error('Ошибка сохранения'))
+  await screen.findByText('old.png')
+  const input = await screen.findByLabelText('Добавить медиафайл')
+  fireEvent.change(input, { target: { files: [new File(['new'], 'new.png', { type: 'image/png' })] } })
+  await waitFor(() => expect(saveButton()).toBeDisabled())
+  expect(saveExercise).not.toHaveBeenCalled()
+  finish('new-id')
+  await waitFor(() => expect(saveButton()).toBeEnabled())
+  await user.click(saveButton())
+  expect(await screen.findByText('Ошибка сохранения')).toBeInTheDocument()
+  await user.click(saveButton())
+  await screen.findByText('Список упражнений')
+  expect(uploadMedia).toHaveBeenCalledTimes(1)
+  for (const [exercise] of saveExercise.mock.calls) expect(exercise.media[0].response.fileId).toBe('new-id')
 })
