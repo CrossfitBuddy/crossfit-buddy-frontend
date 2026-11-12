@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Alert, App as AntApp, Button, Spin } from 'antd'
 import { useNavigate } from 'react-router-dom'
 import { ExerciseForm } from './ExerciseForm'
-import { exerciseApi } from './mockExerciseApi'
+import { exerciseApi, exerciseError } from './exerciseApi'
 import type { Exercise, ExerciseApi } from './types'
 
 const LIST_PATH = '/exercises'
@@ -21,6 +21,7 @@ export function ExerciseEditor({ id, api = exerciseApi }: { id?: string; api?: E
   const save = useMutation({
     mutationFn: (value: Exercise) => api.saveExercise(value, id),
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['exercise-catalog'] })
       if (id) queryClient.removeQueries({ queryKey: ['exercise', id], exact: true })
       message.success('Упражнение сохранено')
       navigate(LIST_PATH)
@@ -48,7 +49,7 @@ export function ExerciseEditor({ id, api = exerciseApi }: { id?: string; api?: E
               type="error"
               showIcon
               title={exercise.isError ? 'Не удалось открыть упражнение' : 'Не удалось загрузить данные формы'}
-              description="Попробуйте ещё раз или вернитесь к списку упражнений"
+              description={exerciseError(exercise.error ?? catalog.error) ?? 'Попробуйте ещё раз или вернитесь к списку упражнений'}
             />
             <Button block size="large" className="mt-4" onClick={() => navigate(LIST_PATH)}>
               К списку упражнений
@@ -59,7 +60,7 @@ export function ExerciseEditor({ id, api = exerciseApi }: { id?: string; api?: E
           <>
             {save.isError && (
               <div role="alert" className="mb-6">
-                <Alert type="error" showIcon title="Не удалось сохранить упражнение. Попробуйте ещё раз" />
+                <Alert type="error" showIcon title="Не удалось сохранить упражнение" description={exerciseError(save.error) ?? 'Попробуйте ещё раз'} />
               </div>
             )}
             <ExerciseForm

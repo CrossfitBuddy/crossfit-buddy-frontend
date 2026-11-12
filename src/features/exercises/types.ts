@@ -3,18 +3,21 @@ import type { UploadFile } from 'antd'
 export type ValueType = 'INTEGER' | 'DECIMAL'
 
 export type Measure = {
+  id?: string
   name: string
   valueType: ValueType
   unit: string
 }
 
 export type Equipment = {
+  id?: string
   name: string
   image: UploadFile[]
   properties: Measure[]
 }
 
 export type Exercise = {
+  category: string
   name: string
   description: string
   media: UploadFile[]
@@ -24,7 +27,7 @@ export type Exercise = {
 
 export type ExerciseCatalog = {
   metrics: Measure[]
-  equipment: string[]
+  equipment: Equipment[]
 }
 
 export type ExerciseApi = {
