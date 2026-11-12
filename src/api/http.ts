@@ -1,15 +1,16 @@
 import Axios, { type AxiosError, type AxiosRequestConfig } from 'axios'
+import { apiBaseUrl } from './baseUrl'
 
 export const ACCESS_TOKEN_KEY = 'accessToken'
 const publicAuthPaths = new Set([
-  '/api/v1/auth/login', '/api/v1/auth/register',
-  '/api/v1/auth/password/request', '/api/v1/auth/password/confirm',
-  '/api/v1/auth/email/confirm', '/api/v1/auth/email/resend',
+  '/v1/auth/login', '/v1/auth/register',
+  '/v1/auth/password/request', '/v1/auth/password/confirm',
+  '/v1/auth/email/confirm', '/v1/auth/email/resend',
 ])
 
 export const api = Axios.create({
   timeout: 15000,
-  baseURL: import.meta.env.VITE_API_URL ?? '',
+  baseURL: apiBaseUrl,
 })
 
 api.interceptors.request.use((config) => {

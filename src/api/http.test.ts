@@ -1,6 +1,10 @@
 import { beforeEach, expect, it } from 'vitest'
 import { api } from './http'
 
+it('берёт базовый адрес /api, чтобы путь /v1 не обходил контекст бэкенда', () => {
+  expect(api.defaults.baseURL).toBe('/api')
+})
+
 beforeEach(() => { localStorage.clear(); localStorage.setItem('accessToken', 'revoked-token') })
 
 async function authorizationFor(url: string) {
@@ -11,13 +15,13 @@ async function authorizationFor(url: string) {
 }
 
 it.each([
-  '/api/v1/auth/login', '/api/v1/auth/register',
-  '/api/v1/auth/password/request', '/api/v1/auth/password/confirm',
-  '/api/v1/auth/email/confirm', '/api/v1/auth/email/resend',
+  '/v1/auth/login', '/v1/auth/register',
+  '/v1/auth/password/request', '/v1/auth/password/confirm',
+  '/v1/auth/email/confirm', '/v1/auth/email/resend',
 ])('не отправляет отозванный токен на публичный адрес %s', async (path) => {
   expect(await authorizationFor(path)).toBeUndefined()
 })
 
-it.each(['/api/v1/auth/me', '/api/v1/auth/active-role'])('сохраняет авторизацию для %s', async (path) => {
+it.each(['/v1/auth/me', '/v1/auth/active-role'])('сохраняет авторизацию для %s', async (path) => {
   expect(await authorizationFor(path)).toBe('Bearer revoked-token')
 })

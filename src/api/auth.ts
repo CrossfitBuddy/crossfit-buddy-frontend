@@ -12,13 +12,13 @@ export type RegisterRequest = {
 }
 
 export async function registerUser(request: RegisterRequest): Promise<void> {
-  await api.post('/api/v1/auth/register', request)
+  await api.post('/v1/auth/register', request)
 }
 
 export async function confirmEmail(token: string): Promise<void> {
-  await api.post('/api/v1/auth/email/confirm', { token })
+  await api.post('/v1/auth/email/confirm', { token })
 }
 
 export async function resendConfirmationEmail(email: string): Promise<void> {
-  await api.post('/api/v1/auth/email/resend', { email })
+  await api.post('/v1/auth/email/resend', { email })
 }
