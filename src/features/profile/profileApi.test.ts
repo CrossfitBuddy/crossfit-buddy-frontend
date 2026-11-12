@@ -19,7 +19,7 @@ describe('Запросы профиля', () => {
     const controller = new AbortController()
     const api = createProfileApi(() => 'test-token', initialProfile.id)
     await expect(api.getProfile(controller.signal)).resolves.toMatchObject(initialProfile)
-    expect(transport.get).toHaveBeenCalledWith('/api/v1/users/me', { headers: { Authorization: 'Bearer test-token' }, signal: controller.signal })
+    expect(transport.get).toHaveBeenCalledWith('/v1/users/me', { headers: { Authorization: 'Bearer test-token' }, signal: controller.signal })
   })
   it('отправляет PUT и использует текущий токен после смены роли', async () => {
     let token = 'first-token'
@@ -33,7 +33,7 @@ describe('Запросы профиля', () => {
     expect(transport.put.mock.calls[0][1]).toMatchObject({ athlete: initialProfile.athleteProfile })
     expect(transport.put.mock.calls[0][1]).not.toHaveProperty('athleteProfile')
     expect(transport.put.mock.calls[0][1]).not.toHaveProperty('trainer')
-    expect(transport.put.mock.calls[0][0]).toBe('/api/v1/users/me')
+    expect(transport.put.mock.calls[0][0]).toBe('/v1/users/me')
     expect(transport.put.mock.calls[0][2]).toEqual({ headers: { Authorization: 'Bearer new-token' } })
   })
   it('не делает запрос без сессии и не возвращает чужой профиль', async () => {

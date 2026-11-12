@@ -14,7 +14,7 @@ describe('Контракт входа', () => {
   it('отправляет пароль в теле, очищает пробелы только у email', async () => {
     transport.post.mockResolvedValue({ data: response })
     await expect(authApi.login(' review@example.com ', ' Password123! ')).resolves.toEqual(response)
-    expect(transport.post).toHaveBeenCalledWith('/api/v1/auth/login', { email: 'review@example.com', password: ' Password123! ' })
+    expect(transport.post).toHaveBeenCalledWith('/v1/auth/login', { email: 'review@example.com', password: ' Password123! ' })
   })
   it('не возвращает наружу Axios-ошибку с секретами запроса', async () => {
     transport.post.mockRejectedValue({ isAxiosError: true, response: { status: 401, data: { code: 'INVALID_CREDENTIALS' } }, config: { data: { password: 'secret-password' } } })
@@ -32,7 +32,7 @@ describe('Контракт входа', () => {
   it('при смене роли передаёт действующий токен в заголовке', async () => {
     transport.patch.mockResolvedValue({ data: response })
     await authApi.switchRole('TRAINER', 'old-token')
-    expect(transport.patch).toHaveBeenCalledWith('/api/v1/auth/active-role', { role: 'TRAINER' }, { headers: { Authorization: 'Bearer old-token' } })
+    expect(transport.patch).toHaveBeenCalledWith('/v1/auth/active-role', { role: 'TRAINER' }, { headers: { Authorization: 'Bearer old-token' } })
   })
 })
 describe('Клиентские проверки', () => {

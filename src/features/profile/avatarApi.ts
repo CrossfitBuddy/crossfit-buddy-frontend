@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { apiBaseUrl } from '../../api/baseUrl'
 import { ProfileError, profileRequestError } from './profileApi'
 
 export const MAX_AVATAR_BYTES = 5 * 1024 * 1024
@@ -24,13 +25,13 @@ function avatarError(error: unknown): ProfileError {
 }
 
 export function createAvatarApi(getToken: () => string | null) {
-  const http = axios.create({ baseURL: import.meta.env.VITE_API_URL ?? '', timeout: 30000 })
+  const http = axios.create({ baseURL: apiBaseUrl, timeout: 30000 })
   const config = () => {
     const token = getToken()
     if (!token) throw new ProfileError('Сессия истекла. Войдите снова.', 401)
     return { headers: { Authorization: 'Bearer ' + token } }
   }
-  const path = '/api/v1/users/me/avatar'
+  const path = '/v1/users/me/avatar'
   return {
     async getAvatar(signal?: AbortSignal): Promise<Blob | null> {
       try {
