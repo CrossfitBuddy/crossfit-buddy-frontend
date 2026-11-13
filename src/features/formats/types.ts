@@ -1,16 +1,16 @@
-export const formatCodes = ['EMOM', 'FOR_TIME', 'AMRAP', 'TABATA'] as const
+export const formatTypes = ['EMOM', 'FOR_TIME', 'AMRAP', 'TABATA'] as const
 
-export type FormatCode = typeof formatCodes[number]
+export type FormatType = typeof formatTypes[number]
 
 export type ComplexFormat = {
-  code: FormatCode
+  type: FormatType
   name: string
   description: string
-  duration: number | null
-  interval: number | null
+  durationRequired: boolean
+  intervalRequired: boolean
 }
 
 export type FormatsApi = {
   getFormats: (signal?: AbortSignal) => Promise<ComplexFormat[]>
-  updateDescription: (code: FormatCode, description: string) => Promise<void>
+  updateDescription: (type: FormatType, description: string) => Promise<ComplexFormat>
 }

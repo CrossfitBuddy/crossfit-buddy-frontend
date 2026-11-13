@@ -3,21 +3,25 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { FormatsScreen } from './FormatsScreen'
-import type { ComplexFormat, FormatsApi } from './types'
+import type { ComplexFormat, FormatType, FormatsApi } from './types'
 
 const initial: ComplexFormat[] = [
-  { code: 'EMOM', name: 'EMOM', description: 'Выполняй задание каждую минуту', duration: 600, interval: 60 },
-  { code: 'FOR_TIME', name: 'For Time', description: 'Выполни раунды как можно быстрее', duration: 900, interval: null },
-  { code: 'AMRAP', name: 'AMRAP', description: 'Максимум раундов за время', duration: 1200, interval: null },
-  { code: 'TABATA', name: 'Tabata', description: 'Работа и отдых по кругу', duration: 20, interval: 10 },
+  { type: 'EMOM', name: 'Every Minute on the Minute', description: 'Выполняй задание каждую минуту', durationRequired: true, intervalRequired: true },
+  { type: 'FOR_TIME', name: 'For Time', description: 'Выполни раунды как можно быстрее', durationRequired: true, intervalRequired: false },
+  { type: 'AMRAP', name: 'As Many Rounds As Possible', description: 'Максимум раундов за время', durationRequired: true, intervalRequired: false },
+  { type: 'TABATA', name: 'Tabata', description: 'Работа и отдых по кругу', durationRequired: true, intervalRequired: true },
 ]
 
 function createApi(overrides: Partial<FormatsApi> = {}) {
   let formats = initial
   const api = {
     getFormats: vi.fn(async () => formats),
-    updateDescription: vi.fn(async (code: string, description: string) => {
-      formats = formats.map((format) => (format.code === code ? { ...format, description } : format))
+    updateDescription: vi.fn(async (type: FormatType, description: string) => {
+      const previous = formats.find((format) => format.type === type)
+      if (!previous) throw new Error('Формат не найден')
+      const updated = { ...previous, description }
+      formats = formats.map((format) => (format.type === type ? updated : format))
+      return updated
     }),
     ...overrides,
   } satisfies FormatsApi
@@ -56,38 +60,40 @@ describe('Экран форматов комплекса', () => {
 
     await user.click(screen.getByRole('button', { name: 'Повторить загрузку' }))
 
-    expect(await screen.findByRole('heading', { name: 'AMRAP' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'As Many Rounds As Possible' })).toBeInTheDocument()
     expect(getFormats).toHaveBeenCalledTimes(2)
   })
 
-  it('открывает форму: описание редактируется, длительность и интервал заблокированы', async () => {
+  it('даёт менять только описание и показывает обязательность длительности и интервала', async () => {
     const user = userEvent.setup()
     renderScreen(createApi())
 
-    await user.click(await screen.findByRole('button', { name: 'Редактировать EMOM' }))
+    await user.click(await screen.findByRole('button', { name: 'Редактировать Every Minute on the Minute' }))
 
     expect(screen.getByRole('textbox', { name: 'Описание' })).toBeEnabled()
-    const [duration, interval] = screen.getAllByRole('spinbutton')
-    expect(duration).toBeDisabled()
-    expect(interval).toBeDisabled()
+    expect(screen.getAllByRole('textbox')).toHaveLength(1)
+    expect(screen.queryByRole('spinbutton')).not.toBeInTheDocument()
+    expect(screen.getByText('Обязательна')).toBeInTheDocument()
+    expect(screen.getByText('Обязателен')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Удалить/ })).not.toBeInTheDocument()
   })
 
-  it('не показывает интервал у формата, где его нет', async () => {
+  it('показывает, что интервал необязателен для For Time', async () => {
     const user = userEvent.setup()
     renderScreen(createApi())
 
     await user.click(await screen.findByRole('button', { name: 'Редактировать For Time' }))
 
-    expect(screen.getAllByRole('spinbutton')).toHaveLength(1)
+    expect(screen.getByText('Необязателен')).toBeInTheDocument()
   })
 
-  it('сохраняет новое описание и показывает его в списке', async () => {
-    const api = createApi()
+  it('сохраняет новое описание и показывает значение из ответа сервера', async () => {
+    const updateDescription = vi.fn().mockResolvedValue({ ...initial[2], description: 'Сохранённое правило' })
+    const api = createApi({ updateDescription })
     const user = userEvent.setup()
     renderScreen(api)
 
-    await user.click(await screen.findByRole('button', { name: 'Редактировать AMRAP' }))
+    await user.click(await screen.findByRole('button', { name: 'Редактировать As Many Rounds As Possible' }))
     const field = screen.getByRole('textbox', { name: 'Описание' })
     await user.clear(field)
     await user.type(field, '  Новое правило  ')
@@ -95,17 +101,17 @@ describe('Экран форматов комплекса', () => {
 
     expect(await screen.findByText('Описание сохранено')).toBeInTheDocument()
     expect(api.updateDescription).toHaveBeenCalledWith('AMRAP', 'Новое правило')
-    const card = screen.getByRole('heading', { name: 'AMRAP' }).closest('li') as HTMLElement
-    expect(within(card).getByText('Новое правило')).toBeInTheDocument()
+    const card = screen.getByRole('heading', { name: 'As Many Rounds As Possible' }).closest('li') as HTMLElement
+    expect(within(card).getByText('Сохранённое правило')).toBeInTheDocument()
   })
 
   it('на время сохранения блокирует форму', async () => {
-    let finish: () => void = () => {}
-    const updateDescription = vi.fn(() => new Promise<void>((resolve) => { finish = resolve }))
+    let finish: (format: ComplexFormat) => void = () => {}
+    const updateDescription = vi.fn(() => new Promise<ComplexFormat>((resolve) => { finish = resolve }))
     const user = userEvent.setup()
     renderScreen(createApi({ updateDescription }))
 
-    await user.click(await screen.findByRole('button', { name: 'Редактировать EMOM' }))
+    await user.click(await screen.findByRole('button', { name: 'Редактировать Every Minute on the Minute' }))
     await user.type(screen.getByRole('textbox', { name: 'Описание' }), ' ещё')
     await user.click(screen.getByRole('button', { name: 'Сохранить' }))
 
@@ -113,16 +119,16 @@ describe('Экран форматов комплекса', () => {
     expect(screen.getByRole('button', { name: 'Отмена' })).toBeDisabled()
     expect(updateDescription).toHaveBeenCalledTimes(1)
 
-    finish()
+    finish(initial[0])
     expect(await screen.findByText('Описание сохранено')).toBeInTheDocument()
   })
 
   it('при ошибке сохранения оставляет введённый текст и даёт повторить', async () => {
-    const updateDescription = vi.fn().mockRejectedValueOnce(new Error('500')).mockResolvedValueOnce(undefined)
+    const updateDescription = vi.fn().mockRejectedValueOnce(new Error('500')).mockResolvedValueOnce({ ...initial[0], description: 'Мой текст' })
     const user = userEvent.setup()
     renderScreen(createApi({ updateDescription }))
 
-    await user.click(await screen.findByRole('button', { name: 'Редактировать EMOM' }))
+    await user.click(await screen.findByRole('button', { name: 'Редактировать Every Minute on the Minute' }))
     const field = screen.getByRole('textbox', { name: 'Описание' })
     await user.clear(field)
     await user.type(field, 'Мой текст')
@@ -156,7 +162,7 @@ describe('Экран форматов комплекса', () => {
     const user = userEvent.setup()
     renderScreen(api)
 
-    await user.click(await screen.findByRole('button', { name: 'Редактировать EMOM' }))
+    await user.click(await screen.findByRole('button', { name: 'Редактировать Every Minute on the Minute' }))
     await user.type(screen.getByRole('textbox', { name: 'Описание' }), ' лишнее')
     await user.click(screen.getByRole('button', { name: 'Отмена' }))
 

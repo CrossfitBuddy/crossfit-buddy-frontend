@@ -1,31 +1,52 @@
-import { describe, expect, it } from 'vitest'
-import { parseFormats } from './formatsApi'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { api } from '../../api/http'
+import { formatsApi } from './formatsApi'
 
-describe('parseFormats', () => {
-  it('возвращает четыре формата в фиксированном порядке', () => {
-    const formats = parseFormats([
-      { code: 'TABATA', description: 'д4' },
-      { code: 'AMRAP', description: 'д3' },
-      { code: 'EMOM', description: 'д1' },
-      { code: 'FOR_TIME', description: 'д2' },
-    ])
+const emom = {
+  type: 'EMOM',
+  name: 'Every Minute on the Minute',
+  description: 'Выполняй задание каждую минуту',
+  durationRequired: true,
+  intervalRequired: true,
+}
 
-    expect(formats.map((format) => format.code)).toEqual(['EMOM', 'FOR_TIME', 'AMRAP', 'TABATA'])
+afterEach(() => vi.restoreAllMocks())
+
+describe('API форматов комплекса', () => {
+  it('загружает четыре формата в фиксированном порядке', async () => {
+    const get = vi.spyOn(api, 'get').mockResolvedValue({ data: [
+      { ...emom, type: 'TABATA', name: 'Tabata' },
+      { ...emom, type: 'AMRAP', name: 'As Many Rounds As Possible', intervalRequired: false },
+      emom,
+      { ...emom, type: 'FOR_TIME', name: 'For Time', intervalRequired: false },
+    ] })
+    const { signal } = new AbortController()
+
+    const formats = await formatsApi.getFormats(signal)
+
+    expect(get).toHaveBeenCalledWith('/api/v1/workouts/formats', { signal })
+    expect(formats.map((format) => format.type)).toEqual(['EMOM', 'FOR_TIME', 'AMRAP', 'TABATA'])
+    expect(formats[0]).toEqual(emom)
+    expect(formats[1].intervalRequired).toBe(false)
   })
 
-  it('подставляет название и пустые значения, если сервер их не прислал', () => {
-    const [format] = parseFormats([{ code: 'FOR_TIME', description: null }])
+  it('игнорирует неизвестные форматы', async () => {
+    vi.spyOn(api, 'get').mockResolvedValue({ data: [emom, { ...emom, type: 'CUSTOM' }] })
 
-    expect(format).toEqual({ code: 'FOR_TIME', name: 'For Time', description: '', duration: null, interval: null })
+    await expect(formatsApi.getFormats()).resolves.toEqual([emom])
   })
 
-  it('игнорирует неизвестные форматы', () => {
-    const formats = parseFormats([{ code: 'EMOM', description: 'д' }, { code: 'CUSTOM', description: 'чужой' }])
+  it('отклоняет ответ неверной формы', async () => {
+    vi.spyOn(api, 'get').mockResolvedValue({ data: [{ ...emom, durationRequired: 600 }] })
 
-    expect(formats.map((format) => format.code)).toEqual(['EMOM'])
+    await expect(formatsApi.getFormats()).rejects.toThrow('Сервер вернул некорректный список форматов')
   })
 
-  it('отклоняет ответ неверной формы', () => {
-    expect(() => parseFormats({ code: 'EMOM' })).toThrow('Сервер вернул некорректный список форматов')
+  it('отправляет только описание и возвращает обновлённый формат', async () => {
+    const updated = { ...emom, description: 'Сохранённое описание' }
+    const patch = vi.spyOn(api, 'patch').mockResolvedValue({ data: updated })
+
+    await expect(formatsApi.updateDescription('EMOM', 'Новое описание')).resolves.toEqual(updated)
+    expect(patch).toHaveBeenCalledWith('/api/v1/workouts/EMOM', { description: 'Новое описание' })
   })
 })

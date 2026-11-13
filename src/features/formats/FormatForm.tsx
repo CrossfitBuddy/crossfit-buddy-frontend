@@ -1,4 +1,4 @@
-import { Button, Form, Input, InputNumber } from 'antd'
+import { Button, Form, Input } from 'antd'
 import type { ComplexFormat } from './types'
 
 type FormatFormProps = {
@@ -21,16 +21,16 @@ export function FormatForm({ format, saving, onSave, onCancel }: FormatFormProps
       disabled={saving}
       onFinish={(values) => onSave(values.description.trim())}
     >
-      {format.duration !== null && (
-        <Form.Item label="Длительность">
-          <InputNumber className="!w-full" value={format.duration} disabled />
-        </Form.Item>
-      )}
-      {format.interval !== null && (
-        <Form.Item label="Интервал">
-          <InputNumber className="!w-full" value={format.interval} disabled />
-        </Form.Item>
-      )}
+      <dl className="mb-6 grid gap-2 text-sm">
+        <div className="flex gap-2">
+          <dt className="font-semibold">Длительность</dt>
+          <dd>{format.durationRequired ? 'Обязательна' : 'Необязательна'}</dd>
+        </div>
+        <div className="flex gap-2">
+          <dt className="font-semibold">Интервал</dt>
+          <dd>{format.intervalRequired ? 'Обязателен' : 'Необязателен'}</dd>
+        </div>
+      </dl>
       <Form.Item
         name="description"
         label="Описание"
