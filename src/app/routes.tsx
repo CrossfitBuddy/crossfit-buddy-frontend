@@ -3,6 +3,7 @@ import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { ExerciseCatalog } from '../features/exercises/ExerciseCatalog'
 import { RoundForm } from '../features/exercises/RoundForm'
+import { FormatsScreen } from '../features/formats/FormatsScreen'
 import { DashboardPage } from '../pages/DashboardPage'
 import { ExerciseEditorPage } from '../pages/ExerciseEditorPage'
 import { PlaceholderPage } from '../pages/PlaceholderPage'
@@ -35,7 +36,7 @@ export const appRoutes: AppRoute[] = [
   { path: '/exercises/new', title: 'Новое упражнение', roles: ['ADMIN'], element: <ExerciseEditorPage /> },
   { path: '/exercises/:id/edit', title: 'Редактирование упражнения', roles: ['ADMIN'], element: <ExerciseEditorPage /> },
   { path: '/round', title: 'Раунд', roles: allRoles, element: <RoundForm /> },
-  { path: '/formats', title: 'Форматы', roles: ['ADMIN'], element: <PlaceholderPage title="Форматы" />, icon: Layers },
+  { path: '/formats', title: 'Форматы', roles: ['ADMIN'], element: <FormatsScreen />, icon: Layers },
   { path: '/profile', title: 'Профиль', roles: allRoles, element: <ProfilePage />, icon: UserRound },
 ]
 
