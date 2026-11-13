@@ -14,6 +14,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from '../../App'
 import { AuthProvider } from './AuthProvider'
 import { writeSession, readSession } from './sessionStorage'
+import { addExercise, getSelection } from '../../features/exercises/selection'
 import { initialProfile } from '../../features/profile/mockProfileApi'
 import type { AuthSession } from './types'
 
@@ -51,8 +52,10 @@ describe('Выход из аккаунта', () => {
     const user = userEvent.setup()
     renderApp(queryClient)
 
+    addExercise('burpee')
     await user.click(await screen.findByRole('button', { name: 'Выйти' }))
 
+    expect(getSelection()).toEqual({ pending: [], round: [] })
     expect(await screen.findByRole('heading', { name: 'Войти' })).toBeInTheDocument()
     expect(localStorage.getItem('accessToken')).toBeNull()
     expect(localStorage.getItem('cb-session')).toBeNull()
