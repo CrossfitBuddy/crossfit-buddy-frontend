@@ -25,3 +25,9 @@ it.each([
 it.each(['/v1/auth/me', '/v1/auth/active-role'])('сохраняет авторизацию для %s', async (path) => {
   expect(await authorizationFor(path)).toBe('Bearer revoked-token')
 })
+
+it('добавляет /api один раз для запросов формы упражнения', () => {
+  for (const path of ['/get/metrics', '/get/equipments', '/get/all-exercises', '/set', '/update']) {
+    expect(api.getUri({ url: '/v1/general-exercises' + path })).toBe('/api/v1/general-exercises' + path)
+  }
+})
