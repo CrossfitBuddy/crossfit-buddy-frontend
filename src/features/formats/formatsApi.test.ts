@@ -24,7 +24,7 @@ describe('API форматов комплекса', () => {
 
     const formats = await formatsApi.getFormats(signal)
 
-    expect(get).toHaveBeenCalledWith('/api/v1/workouts/formats', { signal })
+    expect(get).toHaveBeenCalledWith('/v1/workouts/formats', { signal })
     expect(formats.map((format) => format.type)).toEqual(['EMOM', 'FOR_TIME', 'AMRAP', 'TABATA'])
     expect(formats[0]).toEqual(emom)
     expect(formats[1].intervalRequired).toBe(false)
@@ -47,6 +47,6 @@ describe('API форматов комплекса', () => {
     const patch = vi.spyOn(api, 'patch').mockResolvedValue({ data: updated })
 
     await expect(formatsApi.updateDescription('EMOM', 'Новое описание')).resolves.toEqual(updated)
-    expect(patch).toHaveBeenCalledWith('/api/v1/workouts/EMOM', { description: 'Новое описание' })
+    expect(patch).toHaveBeenCalledWith('/v1/workouts/EMOM', { description: 'Новое описание' })
   })
 })

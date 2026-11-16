@@ -3,7 +3,7 @@ import { api } from '../../api/http'
 import { formatTypes } from './types'
 import type { ComplexFormat, FormatsApi } from './types'
 
-const WORKOUTS_PATH = '/api/v1/workouts'
+const WORKOUTS_PATH = '/v1/workouts'
 
 const formatSchema = z.object({
   type: z.string(),
