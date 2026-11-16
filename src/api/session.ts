@@ -23,12 +23,12 @@ type ApiErrorBody = {
 }
 
 export async function login(email: string, password: string): Promise<AuthResponse> {
-  const { data } = await api.post<AuthResponse>('/api/v1/auth/login', { email, password })
+  const { data } = await api.post<AuthResponse>('/v1/auth/login', { email, password })
   return data
 }
 
 export async function switchActiveRole(role: UserRole, accessToken?: string): Promise<AuthResponse> {
-  const { data } = await api.patch<AuthResponse>('/api/v1/auth/active-role', { role }, accessToken ? { headers: { Authorization: 'Bearer ' + accessToken } } : undefined)
+  const { data } = await api.patch<AuthResponse>('/v1/auth/active-role', { role }, accessToken ? { headers: { Authorization: 'Bearer ' + accessToken } } : undefined)
   return data
 }
 
@@ -41,6 +41,6 @@ export function getApiErrorStatus(error: unknown): number | undefined {
 }
 
 export async function getAccount(accessToken: string): Promise<AccountResponse> {
-  const { data } = await api.get<AccountResponse>('/api/v1/auth/me', { headers: { Authorization: 'Bearer ' + accessToken } })
+  const { data } = await api.get<AccountResponse>('/v1/auth/me', { headers: { Authorization: 'Bearer ' + accessToken } })
   return data
 }

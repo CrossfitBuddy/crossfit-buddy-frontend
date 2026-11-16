@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { z } from 'zod'
+import { apiBaseUrl } from '../../api/baseUrl'
 import { isValidBirthDate } from './profileValues'
 import type { ProfileApi, ProfileResponse, UpdateProfileRequest } from './types'
 
@@ -93,7 +94,7 @@ export function profileRequestError(error: unknown): ProfileError {
 }
 
 export function createProfileApi(getToken: () => string | null, accountId?: string): Pick<ProfileApi, 'getProfile' | 'updateProfile'> {
-  const http = axios.create({ baseURL: import.meta.env.VITE_API_URL ?? '', timeout: 15000 })
+  const http = axios.create({ baseURL: apiBaseUrl, timeout: 15000 })
   const config = () => {
     const token = getToken()
     if (!token) throw new ProfileError('Сессия истекла. Войдите снова.', 401)
@@ -107,7 +108,7 @@ export function createProfileApi(getToken: () => string | null, accountId?: stri
   }
   return {
     async getProfile(signal?: AbortSignal) {
-      try { return parse((await http.get('/api/v1/users/me', { ...config(), signal })).data) }
+      try { return parse((await http.get('/v1/users/me', { ...config(), signal })).data) }
       catch (error) { throw profileRequestError(error) }
     },
     async updateProfile(request: UpdateProfileRequest) {
@@ -116,7 +117,7 @@ export function createProfileApi(getToken: () => string | null, accountId?: stri
         ...(athleteProfile ? { athlete: athleteProfile } : {}),
         ...(trainerProfile ? { trainer: trainerProfile } : {}),
       }
-      try { return parse((await http.put('/api/v1/users/me', body, config())).data) }
+      try { return parse((await http.put('/v1/users/me', body, config())).data) }
       catch (error) { throw profileRequestError(error) }
     },
   }
