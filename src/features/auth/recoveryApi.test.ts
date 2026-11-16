@@ -8,10 +8,10 @@ beforeEach(() => vi.resetAllMocks())
 it('передаёт email и секреты только в теле запросов восстановления', async () => {
   transport.post.mockResolvedValue({ data: { message: 'ok' } })
   await recoveryApi.requestCode(' review@example.com ')
-  expect(transport.post).toHaveBeenCalledWith('/api/v1/auth/password/request', { email: 'review@example.com' })
+  expect(transport.post).toHaveBeenCalledWith('/v1/auth/password/request', { email: 'review@example.com' })
   const values = { email: 'review@example.com', code: '123456', password: 'Password123!', passwordConfirmation: 'Password123!' }
   await recoveryApi.resetPassword(values)
-  expect(transport.post).toHaveBeenLastCalledWith('/api/v1/auth/password/confirm', values)
+  expect(transport.post).toHaveBeenLastCalledWith('/v1/auth/password/confirm', values)
 })
 
 it.each([

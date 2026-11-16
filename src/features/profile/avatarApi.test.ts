@@ -17,7 +17,7 @@ it('отправляет multipart с текущим токеном, читае�
   const file = new File(['image'], 'avatar.png', { type: 'image/png' })
   transport.put.mockResolvedValue({ status: 204 })
   await api.replaceAvatar(file)
-  expect(transport.put.mock.calls[0][0]).toBe('/api/v1/users/me/avatar')
+  expect(transport.put.mock.calls[0][0]).toBe('/v1/users/me/avatar')
   expect(transport.put.mock.calls[0][1].get('file')).toBe(file)
   expect(transport.put.mock.calls[0][2]).toEqual({ headers: { Authorization: 'Bearer first-token' } })
   token = 'new-token'
@@ -26,7 +26,7 @@ it('отправляет multipart с текущим токеном, читае�
   expect(await api.getAvatar(controller.signal)).toBe(file)
   expect(transport.get.mock.calls[0][1]).toMatchObject({ responseType: 'blob', signal: controller.signal, headers: { Authorization: 'Bearer new-token' } })
   await api.deleteAvatar()
-  expect(transport.delete.mock.calls[0]).toEqual(['/api/v1/users/me/avatar', { headers: { Authorization: 'Bearer new-token' } }])
+  expect(transport.delete.mock.calls[0]).toEqual(['/v1/users/me/avatar', { headers: { Authorization: 'Bearer new-token' } }])
 })
 it('404 означает отсутствие аватара; 401 и некорректное изображение остаются ошибками', async () => {
   const api = createAvatarApi(() => 'token')
