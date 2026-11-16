@@ -6,4 +6,34 @@
  * OpenAPI spec version: v1
  */
 
+export * from './accountResponse';
+export * from './accountResponseActiveRole';
+export * from './accountResponseRolesItem';
+export * from './activeRoleRequest';
+export * from './activeRoleRequestRole';
+export * from './athleteFields';
+export * from './athleteFieldsFitnessLevel';
+export * from './athleteFieldsRxPreference';
+export * from './athleteProfileRequest';
+export * from './athleteProfileRequestFitnessLevel';
+export * from './athleteProfileRequestRxPreference';
+export * from './authResponse';
+export * from './emailConfirmRequest';
+export * from './emailResendRequest';
+export * from './list200Item';
 export * from './listWorkouts200Item';
+export * from './loginRequest';
+export * from './messageResponse';
+export * from './passwordResetConfirmation';
+export * from './passwordResetRequest';
+export * from './profileResponse';
+export * from './profileResponseGender';
+export * from './profileResponseRolesItem';
+export * from './registerRequest';
+export * from './registerRequestRole';
+export * from './registerResponse';
+export * from './replaceCurrentAvatarBody';
+export * from './trainerFields';
+export * from './trainerProfileRequest';
+export * from './updateProfileRequest';
+export * from './updateProfileRequestGender';
