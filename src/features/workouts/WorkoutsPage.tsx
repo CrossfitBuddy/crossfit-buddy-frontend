@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getApiErrorStatus } from '../../api/session'
 import { useAuth } from '../../app/auth/useAuth'
+import { WorkoutCardScreen } from './card/WorkoutCardScreen'
 import { sources, statuses, workoutsApi, type Workout, type WorkoutFilters } from './workoutsApi'
 
 const dateFormat = new Intl.DateTimeFormat('ru-RU', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' })
@@ -125,6 +126,7 @@ function WorkoutList() {
 
 export function WorkoutsPage() {
   const { workoutId } = useParams()
+  const { user, activeRole, signOut } = useAuth()
 
   return (
     <div className="min-h-full bg-[#f7f7f5] text-[#171c18]">
@@ -136,7 +138,9 @@ export function WorkoutsPage() {
         {workoutId ? (
           <>
             <Link className="font-bold text-lime-800" to="/workouts">К тренировкам</Link>
-            <p>Подробная карточка пока недоступна.</p>
+            {user && activeRole && (
+              <WorkoutCardScreen id={workoutId} accountKey={`${user.id}:${activeRole}`} onSessionExpired={signOut} />
+            )}
           </>
         ) : <WorkoutList />}
       </div>
