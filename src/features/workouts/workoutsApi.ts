@@ -36,7 +36,7 @@ export type WorkoutFilters = {
 
 export const workoutsApi = {
   async list({ q, source, status, date, page }: WorkoutFilters, signal?: AbortSignal) {
-    const { data } = await api.get('/api/v1/workouts', {
+    const { data } = await api.get('/v1/workouts', {
       params: {
         q: q || undefined,
         source: source || undefined,

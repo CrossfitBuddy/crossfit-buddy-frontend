@@ -1,16 +1,17 @@
 import { exerciseParams, formatDuration, isSafeUrl, stageParams } from './workoutCardFormat'
-import type { MaterialType, WorkoutDetails } from './types'
+import type { WorkoutDetails } from './types'
 
-const dateFormat = new Intl.DateTimeFormat('ru-RU', { dateStyle: 'medium', timeStyle: 'short' })
-
-const materialLabels: Record<MaterialType, string> = {
-  VIDEO: 'Видео',
-  LINK: 'Ссылка',
-  FILE: 'Файл',
+function materialLabel(type: string) {
+  switch (type) {
+    case 'VIDEO': return 'Видео'
+    case 'LINK': return 'Ссылка'
+    case 'FILE': return 'Файл'
+    default: return 'Материал'
+  }
 }
 
 export function WorkoutCard({ workout }: { workout: WorkoutDetails }) {
-  const formats = [...new Set(workout.stages.map((stage) => stage.formatName))]
+  const formats = [...new Set(workout.stages.map((stage) => stage.complexFormat))]
 
   return (
     <article className="space-y-6">
@@ -22,12 +23,6 @@ export function WorkoutCard({ workout }: { workout: WorkoutDetails }) {
             <div className="flex flex-wrap gap-2">
               <dt className="font-bold">Формат комплекса:</dt>
               <dd>{formats.join(', ')}</dd>
-            </div>
-          )}
-          {workout.startsAt && (
-            <div className="flex flex-wrap gap-2">
-              <dt className="font-bold">Дата и время:</dt>
-              <dd><time dateTime={workout.startsAt}>{dateFormat.format(new Date(workout.startsAt))}</time></dd>
             </div>
           )}
           {workout.durationSeconds !== null && (
@@ -43,19 +38,19 @@ export function WorkoutCard({ workout }: { workout: WorkoutDetails }) {
       {workout.stages.map((stage) => {
         const params = stageParams(stage)
         return (
-          <section key={stage.id} aria-label={stage.name} className="rounded-2xl bg-white p-4">
-            <h3 className="text-lg font-black">{stage.name}</h3>
-            <p className="text-sm text-stone-500">{[stage.formatName, ...params].join(' · ')}</p>
+          <section key={stage.id} aria-label={stage.format} className="rounded-2xl bg-white p-4">
+            <h3 className="text-lg font-black">{stage.format}</h3>
+            <p className="text-sm text-stone-500">{[stage.complexFormat, ...params].join(' · ')}</p>
             <div className="mt-4 space-y-4">
               {stage.rounds.map((round) => (
-                <div key={round.position}>
+                <div key={round.id}>
                   <h4 className="font-bold">
                     Раунд {round.position}
                     {round.repeatCount > 1 && <span className="font-normal text-stone-500"> · повторений раунда: {round.repeatCount}</span>}
                   </h4>
                   <ol className="mt-2 space-y-2">
                     {round.exercises.map((exercise, index) => (
-                      <li key={`${exercise.exerciseId}-${index}`} className="rounded-xl bg-stone-50 px-3 py-2">
+                      <li key={`${exercise.id}-${exercise.position}`} className="rounded-xl bg-stone-50 px-3 py-2">
                         <p className="font-semibold">{index + 1}. {exercise.name}</p>
                         {exerciseParams(exercise).length > 0 && <p className="text-sm text-stone-600">{exerciseParams(exercise).join(' · ')}</p>}
                         {exercise.notes && <p className="text-sm italic text-stone-500">{exercise.notes}</p>}
@@ -75,7 +70,7 @@ export function WorkoutCard({ workout }: { workout: WorkoutDetails }) {
           <ul className="mt-3 space-y-2">
             {workout.materials.map((material) => (
               <li key={`${material.type}-${material.url}`}>
-                <span className="mr-2 text-sm text-stone-500">{materialLabels[material.type]}</span>
+                <span className="mr-2 text-sm text-stone-500">{materialLabel(material.type)}</span>
                 {isSafeUrl(material.url)
                   ? <a href={material.url} target="_blank" rel="noopener noreferrer" className="font-bold !text-lime-700">{material.title}</a>
                   : <span>{material.title}</span>}

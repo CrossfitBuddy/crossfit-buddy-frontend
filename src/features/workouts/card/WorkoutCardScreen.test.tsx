@@ -10,35 +10,36 @@ const workout: WorkoutDetails = {
   id: 'w1',
   title: 'Fran',
   description: 'Классический комплекс',
-  startsAt: '2026-11-12T18:00:00',
   durationSeconds: 1800,
   stages: [
     {
       id: 's1',
-      name: 'Разминка',
-      formatName: 'AMRAP',
+      format: 'Разминка',
+      complexFormat: 'AMRAP',
       timeLimitSeconds: 300,
       targetRounds: null,
       intervalSeconds: null,
       rounds: [{
+        id: 'r1',
         position: 1,
         repeatCount: 2,
-        exercises: [{ exerciseId: 'e1', name: 'Скакалка', repetitions: 50, weightKg: null, durationSeconds: null, distanceMeters: null, heightCm: null, notes: null }],
+        exercises: [{ id: 'e1', position: 1, name: 'Скакалка', repetitions: 50, weightKg: null, durationSeconds: null, distanceMeters: null, heightCm: null, notes: null }],
       }],
     },
     {
       id: 's2',
-      name: 'Основной блок',
-      formatName: 'For Time',
+      format: 'Основной блок',
+      complexFormat: 'For Time',
       timeLimitSeconds: 900,
       targetRounds: 3,
       intervalSeconds: 60,
       rounds: [{
+        id: 'r2',
         position: 1,
         repeatCount: 1,
         exercises: [
-          { exerciseId: 'e2', name: 'Трастеры', repetitions: 21, weightKg: 43, durationSeconds: null, distanceMeters: null, heightCm: null, notes: 'Без пауз' },
-          { exerciseId: 'e3', name: 'Подтягивания', repetitions: 21, weightKg: null, durationSeconds: null, distanceMeters: null, heightCm: null, notes: null },
+          { id: 'e2', position: 1, name: 'Трастеры', repetitions: 21, weightKg: 43, durationSeconds: null, distanceMeters: null, heightCm: null, notes: 'Без пауз' },
+          { id: 'e3', position: 2, name: 'Подтягивания', repetitions: 21, weightKg: null, durationSeconds: null, distanceMeters: null, heightCm: null, notes: null },
         ],
       }],
     },
@@ -51,10 +52,10 @@ const workout: WorkoutDetails = {
 
 const httpError = (status: number) => new AxiosError('failed', 'ERR_BAD_REQUEST', undefined, undefined, { status } as never)
 
-function renderCard(api: WorkoutCardApi) {
+function renderCard(api: WorkoutCardApi, onSessionExpired = vi.fn()) {
   render(
     <QueryClientProvider client={new QueryClient()}>
-      <WorkoutCardScreen id="w1" accountKey="user:ATHLETE" api={api} />
+      <WorkoutCardScreen id="w1" accountKey="user:ATHLETE" onSessionExpired={onSessionExpired} api={api} />
     </QueryClientProvider>,
   )
 }
@@ -111,10 +112,10 @@ describe('Карточка тренировки', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Загрузка тренировки')
   })
 
-  it('показывает сообщение, если тренировка не найдена', async () => {
+  it('показывает общее сообщение для отсутствующей и недоступной карточки', async () => {
     renderCard({ getWorkout: vi.fn().mockRejectedValue(httpError(404)) })
 
-    expect(await screen.findByText('Тренировка не найдена')).toBeInTheDocument()
+    expect(await screen.findByText('Тренировка не найдена или недоступна')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Повторить загрузку' })).not.toBeInTheDocument()
   })
 
@@ -123,6 +124,20 @@ describe('Карточка тренировки', () => {
 
     expect(await screen.findByText('Нет доступа к этой тренировке')).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Fran' })).not.toBeInTheDocument()
+  })
+
+  it('показывает ошибку некорректного идентификатора', async () => {
+    renderCard({ getWorkout: vi.fn().mockRejectedValue(httpError(400)) })
+
+    expect(await screen.findByText('Некорректная ссылка на тренировку')).toBeInTheDocument()
+  })
+
+  it('завершает сессию при 401', async () => {
+    const onSessionExpired = vi.fn()
+    renderCard({ getWorkout: vi.fn().mockRejectedValue(httpError(401)) }, onSessionExpired)
+
+    expect(await screen.findByText('Сессия истекла. Войдите снова.')).toBeInTheDocument()
+    expect(onSessionExpired).toHaveBeenCalledOnce()
   })
 
   it('при другой ошибке даёт повторить загрузку', async () => {

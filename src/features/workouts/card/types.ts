@@ -1,6 +1,7 @@
 export type WorkoutExercise = {
-  exerciseId: string
+  id: string
   name: string
+  position: number
   repetitions: number | null
   weightKg: number | null
   durationSeconds: number | null
@@ -10,6 +11,7 @@ export type WorkoutExercise = {
 }
 
 export type WorkoutRound = {
+  id: string
   position: number
   repeatCount: number
   exercises: WorkoutExercise[]
@@ -17,18 +19,16 @@ export type WorkoutRound = {
 
 export type WorkoutStage = {
   id: string
-  name: string
-  formatName: string
+  format: string
+  complexFormat: string
   timeLimitSeconds: number | null
   targetRounds: number | null
   intervalSeconds: number | null
   rounds: WorkoutRound[]
 }
 
-export type MaterialType = 'VIDEO' | 'LINK' | 'FILE'
-
 export type WorkoutMaterial = {
-  type: MaterialType
+  type: string
   title: string
   url: string
 }
@@ -37,7 +37,6 @@ export type WorkoutDetails = {
   id: string
   title: string
   description: string | null
-  startsAt: string | null
   durationSeconds: number | null
   stages: WorkoutStage[]
   materials: WorkoutMaterial[]
@@ -47,4 +46,4 @@ export type WorkoutCardApi = {
   getWorkout: (id: string, signal?: AbortSignal) => Promise<WorkoutDetails>
 }
 
-export type WorkoutErrorKind = 'not-found' | 'forbidden' | 'unknown'
+export type WorkoutErrorKind = 'invalid-id' | 'unauthorized' | 'not-found' | 'forbidden' | 'unknown'

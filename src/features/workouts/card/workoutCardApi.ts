@@ -1,14 +1,15 @@
-import { isAxiosError } from 'axios'
 import { z } from 'zod'
 import { api } from '../../../api/http'
+import { getApiErrorStatus } from '../../../api/session'
 import type { WorkoutCardApi, WorkoutDetails, WorkoutErrorKind } from './types'
 
 const optionalNumber = z.number().nullish().transform((value) => value ?? null)
 const optionalText = z.string().nullish().transform((value) => value ?? null)
 
 const exerciseSchema = z.object({
-  exerciseId: z.string(),
+  id: z.string(),
   name: z.string(),
+  position: z.number().int(),
   repetitions: optionalNumber,
   weightKg: optionalNumber,
   durationSeconds: optionalNumber,
@@ -18,15 +19,16 @@ const exerciseSchema = z.object({
 })
 
 const roundSchema = z.object({
-  position: z.number(),
-  repeatCount: z.number().default(1),
+  id: z.string(),
+  position: z.number().int(),
+  repeatCount: z.number().int(),
   exercises: z.array(exerciseSchema).default([]),
 })
 
 const stageSchema = z.object({
   id: z.string(),
-  name: z.string(),
-  format: z.object({ name: z.string() }),
+  format: z.string(),
+  complexFormat: z.string(),
   timeLimitSeconds: optionalNumber,
   targetRounds: optionalNumber,
   intervalSeconds: optionalNumber,
@@ -34,37 +36,42 @@ const stageSchema = z.object({
 })
 
 const materialSchema = z.object({
-  type: z.enum(['VIDEO', 'LINK', 'FILE']),
+  type: z.string(),
   title: z.string(),
   url: z.string(),
 })
 
 const workoutSchema = z.object({
   id: z.string(),
-  title: z.string(),
+  title: optionalText,
   description: optionalText,
-  startsAt: optionalText,
-  durationSeconds: optionalNumber,
+  durationSec: optionalNumber,
   stages: z.array(stageSchema).default([]),
-  materials: z.array(materialSchema).default([]),
+  materials: z.array(materialSchema).nullish().transform((materials) => materials ?? []),
 })
 
 export function parseWorkout(data: unknown): WorkoutDetails {
   const result = workoutSchema.safeParse(data)
   if (!result.success) throw new Error('Сервер вернул некорректную карточку тренировки')
-  const { stages, ...workout } = result.data
+  const { durationSec, stages, ...workout } = result.data
   return {
     ...workout,
-    stages: stages.map(({ format, rounds, ...stage }) => ({
+    title: workout.title?.trim() || 'Тренировка без названия',
+    durationSeconds: durationSec,
+    stages: stages.map(({ rounds, ...stage }) => ({
       ...stage,
-      formatName: format.name,
-      rounds: [...rounds].sort((left, right) => left.position - right.position),
+      rounds: rounds.map((round) => ({
+        ...round,
+        exercises: [...round.exercises].sort((left, right) => left.position - right.position),
+      })).sort((left, right) => left.position - right.position),
     })),
   }
 }
 
 export function getWorkoutErrorKind(error: unknown): WorkoutErrorKind {
-  const status = isAxiosError(error) ? error.response?.status : undefined
+  const status = getApiErrorStatus(error)
+  if (status === 400) return 'invalid-id'
+  if (status === 401) return 'unauthorized'
   if (status === 404) return 'not-found'
   if (status === 403) return 'forbidden'
   return 'unknown'
@@ -72,7 +79,7 @@ export function getWorkoutErrorKind(error: unknown): WorkoutErrorKind {
 
 export const workoutCardApi: WorkoutCardApi = {
   async getWorkout(id, signal) {
-    const { data } = await api.get<unknown>(`/api/v1/workouts/${encodeURIComponent(id)}`, { signal })
+    const { data } = await api.get<unknown>(`/v1/workouts/${encodeURIComponent(id)}`, { signal })
     return parseWorkout(data)
   },
 }

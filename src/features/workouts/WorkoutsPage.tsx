@@ -137,7 +137,9 @@ export function WorkoutsPage() {
       <div className="space-y-4 p-6">
         {workoutId ? (
           <>
-            <Link className="font-bold text-lime-800" to="/workouts">К тренировкам</Link>
+            <Link className="font-bold text-lime-800" to={activeRole === 'ADMIN' ? '/' : '/workouts'}>
+              {activeRole === 'ADMIN' ? 'На главную' : 'К тренировкам'}
+            </Link>
             {user && activeRole && (
               <WorkoutCardScreen id={workoutId} accountKey={`${user.id}:${activeRole}`} onSessionExpired={signOut} />
             )}
