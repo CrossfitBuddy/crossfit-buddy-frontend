@@ -8,6 +8,7 @@ import { ExerciseEditorPage } from '../pages/ExerciseEditorPage'
 import { PlaceholderPage } from '../pages/PlaceholderPage'
 import { ProfilePage } from '../pages/ProfilePage'
 import { useAuth } from './auth/useAuth'
+import { WorkoutsPage } from '../features/workouts/WorkoutsPage'
 import type { UserRole } from './auth/types'
 
 export type AppRoute = {
@@ -28,7 +29,8 @@ function ExercisesEntry() {
 
 export const appRoutes: AppRoute[] = [
   { path: '/', title: 'Главная', roles: allRoles, element: <DashboardPage />, icon: House },
-  { path: '/workouts', title: 'Тренировки', roles: ['ATHLETE', 'TRAINER'], element: <PlaceholderPage title="Тренировки" />, icon: Dumbbell },
+  { path: '/workouts', title: 'Тренировки', roles: ['ATHLETE', 'TRAINER'], element: <WorkoutsPage />, icon: Dumbbell },
+  { path: '/workouts/:workoutId', title: 'Тренировка', roles: ['ATHLETE', 'TRAINER'], element: <WorkoutsPage /> },
   { path: '/history', title: 'История', roles: ['ATHLETE'], element: <PlaceholderPage title="История" />, icon: History },
   { path: '/athletes', title: 'Атлеты', roles: ['TRAINER'], element: <PlaceholderPage title="Атлеты" />, icon: Users },
   { path: '/exercises', title: 'Упражнения', roles: allRoles, element: <ExercisesEntry />, icon: ListChecks },
