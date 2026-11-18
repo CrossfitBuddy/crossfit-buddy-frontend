@@ -8,19 +8,24 @@ import { ImageUpload } from './ImageUpload'
 import { MeasureList } from './MeasureList'
 import type { Exercise, ExerciseCatalog } from './types'
 
-const emptyExercise: Exercise = { name: '', description: '', media: [], metrics: [], equipment: [] }
+const emptyExercise: Exercise = { category: '', name: '', description: '', media: [], metrics: [], equipment: [] }
 
 const fileList = (event: { fileList: UploadFile[] }) => event.fileList
 
 const trimMeasures = <T extends { name: string; unit: string }>(items: T[] = []) =>
   items.map((item) => ({ ...item, name: item.name.trim(), unit: item.unit.trim() }))
 
-const toExercise = (values: Exercise): Exercise => ({
+const toExercise = (values: Exercise, catalog: ExerciseCatalog): Exercise => ({
+  category: values.category,
   name: values.name.trim(),
   description: values.description.trim(),
   media: values.media ?? [],
-  metrics: trimMeasures(values.metrics),
+  metrics: trimMeasures(values.metrics).map(item => ({
+    ...item, id: catalog.metrics.find(m => m.name === item.name && m.unit === item.unit && m.valueType === item.valueType)?.id,
+  })),
   equipment: (values.equipment ?? []).map((item) => ({
+    id: catalog.equipment.find(e => e.name === item.name.trim() && e.properties.length === (item.properties ?? []).length &&
+      e.properties.every((p, i) => p.name === item.properties[i].name && p.unit === item.properties[i].unit && p.valueType === item.properties[i].valueType))?.id,
     name: item.name.trim(),
     image: item.image ?? [],
     properties: trimMeasures(item.properties),
@@ -63,7 +68,7 @@ export function ExerciseForm({ initialValues = emptyExercise, catalog, saving, o
       requiredMark={false}
       initialValues={initialValues}
       disabled={saving}
-      onFinish={(exercise) => onSave(toExercise(exercise))}
+      onFinish={(exercise) => onSave(toExercise(exercise, catalog))}
     >
       <Section title="Основная информация">
         <Form.Item name="name" label="Название" rules={[requiredRule('Название'), { max: 255, message: 'Не более 255 символов' }]}>
@@ -75,6 +80,16 @@ export function ExerciseForm({ initialValues = emptyExercise, catalog, saving, o
           rules={[requiredRule('Описание'), { min: 10, transform: (value: string) => value.trim(), message: 'Не менее 10 символов' }]}
         >
           <Input.TextArea autoSize={{ minRows: 3, maxRows: 8 }} />
+        </Form.Item>
+        <Form.Item name="category" label="Категория" rules={[requiredRule('Категория')]}>
+          <select className="w-full rounded border p-2" disabled={saving}>
+            <option value="">Выберите категорию</option>
+            <option value="STRENGTH">Силовые</option>
+            <option value="CARDIO">Кардио</option>
+            <option value="GYMNASTICS">Гимнастика</option>
+            <option value="WEIGHTLIFTING">Тяжёлая атлетика</option>
+            <option value="OTHER">Другое</option>
+          </select>
         </Form.Item>
         <Form.Item name="media" label="Медиафайлы" valuePropName="fileList" getValueFromEvent={fileList} extra="JPG или PNG">
           <ImageUpload label="Добавить медиафайл" multiple />
@@ -108,7 +123,8 @@ export function ExerciseForm({ initialValues = emptyExercise, catalog, saving, o
                       rules={[requiredRule('Название оборудования')]}
                     >
                       <AutoComplete
-                        options={catalog.equipment.map((value) => ({ value }))}
+                        options={catalog.equipment.map(item => ({ value: item.name, item }))}
+                        onSelect={(_, option) => form.setFieldValue(['equipment', field.name, 'properties'], structuredClone(option.item.properties))}
                         filterOption={(input, option) => (option?.value ?? '').toLowerCase().includes(input.toLowerCase())}
                       />
                     </Form.Item>
