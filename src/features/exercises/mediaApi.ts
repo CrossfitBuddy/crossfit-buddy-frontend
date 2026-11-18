@@ -5,8 +5,8 @@ type UploadLink = { fileId: string; uploadUrl: string; headers: Record<string, s
 export type DownloadLink = { downloadUrl: string; expiresAt: string }
 
 export async function uploadMedia(file: File, signal: AbortSignal) {
-  const { data } = await api.post<UploadLink>('/api/v1/admin/files/upload-url', {
-    fileName: file.name, contentType: file.type, size: file.size,
+  const { data } = await api.post<UploadLink>('/v1/files/upload-url', {
+    fileName: file.name, contentType: ({ 'image/jpeg': 'JPEG', 'image/png': 'PNG', 'video/mp4': 'MP4' } as Record<string, string>)[file.type], size: file.size,
   }, { signal })
   const response = await fetch(data.uploadUrl, {
     method: 'PUT', headers: data.headers, body: file, credentials: 'omit', signal,
@@ -16,7 +16,7 @@ export async function uploadMedia(file: File, signal: AbortSignal) {
 }
 
 export async function downloadMedia(fileId: string, signal: AbortSignal) {
-  const { data } = await api.get<DownloadLink>('/api/v1/files/' + encodeURIComponent(fileId) + '/download-url', { signal })
+  const { data } = await api.get<DownloadLink>('/v1/files/' + encodeURIComponent(fileId) + '/download-url', { signal })
   return data
 }
 

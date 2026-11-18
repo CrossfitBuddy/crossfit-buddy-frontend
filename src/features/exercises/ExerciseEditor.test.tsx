@@ -122,6 +122,8 @@ describe('Форма упражнения', () => {
   })
 
   it('принимает только изображения JPG и PNG', async () => {
+    URL.createObjectURL = vi.fn(() => 'blob:preview')
+    URL.revokeObjectURL = vi.fn()
     vi.mocked(uploadMedia).mockResolvedValue('image-id')
     vi.mocked(downloadMedia).mockResolvedValue({ downloadUrl: '/preview.png', expiresAt: new Date(Date.now() + 60000).toISOString() })
     const { container } = setup()
@@ -133,7 +135,7 @@ describe('Форма упражнения', () => {
     expect(uploadMedia).not.toHaveBeenCalled()
 
     fireEvent.change(input(), { target: { files: [new File(['png'], 'burpee.png', { type: 'image/png' })] } })
-    expect(await screen.findByAltText('Изображение')).toHaveAttribute('src', '/preview.png')
+    expect(await screen.findByAltText('Изображение')).toHaveAttribute('src', 'blob:preview')
   })
 
   it('при редактировании предзаполняет форму и сохраняет изменения', async () => {

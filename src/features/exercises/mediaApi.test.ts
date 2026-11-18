@@ -16,8 +16,8 @@ it('запрашивает ссылку с метаданными и загру�
   const put = vi.fn().mockResolvedValue({ ok: true })
   vi.stubGlobal('fetch', put)
   await expect(uploadMedia(file, signal)).resolves.toBe('image-id')
-  expect(post).toHaveBeenCalledWith('/api/v1/admin/files/upload-url', {
-    fileName: 'photo.png', contentType: 'image/png', size: file.size,
+  expect(post).toHaveBeenCalledWith('/v1/files/upload-url', {
+    fileName: 'photo.png', contentType: 'PNG', size: file.size,
   }, { signal })
   expect(put).toHaveBeenCalledWith('https://storage.test/signed', {
     method: 'PUT', headers: { 'Content-Type': 'image/png' }, credentials: 'omit', body: file, signal,
@@ -36,7 +36,7 @@ it('повторное сохранение передаёт прежние ид
   for (const [path, data] of post.mock.calls) {
     expect(path).toBe('/v1/general-exercises/set')
     const fields = Object.fromEntries((data as FormData).entries())
-    expect(fields).toMatchObject({ imageFileId: 'picture', fileId: 'video', 'exercisesEquipments[0].imageFileId': 'equipment' })
+    expect(fields).toMatchObject({ imageFileId: 'picture', videoFileId: 'video', 'exercisesEquipments[0].imageFileId': 'equipment' })
     expect(Object.values(fields).every(field => typeof field === 'string')).toBe(true)
   }
 })

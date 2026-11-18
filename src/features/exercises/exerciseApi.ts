@@ -9,7 +9,7 @@ type MeasureDto = { id: string; name: string; metricsValueType: 'INTEGER' | 'FLO
 type EquipmentDto = { id: string; name: string; imageFileId?: string; equipmentProperties: MeasureDto[] }
 type ExerciseDto = {
   imageFileId?: string
-  fileId?: string
+  videoFileId?: string
   id: string
   name: string
   description: string
@@ -39,7 +39,7 @@ function createRequest(value: Exercise) {
   const imageId = mediaId(value.media)
   const videoId = mediaId(value.video)
   if (imageId) data.set('imageFileId', imageId)
-  if (videoId) data.set('fileId', videoId)
+  if (videoId) data.set('videoFileId', videoId)
   data.set('name', value.name)
   data.set('description', value.description)
   data.set('category', value.category)
@@ -81,7 +81,7 @@ export const exerciseApi: ExerciseApi = {
     const item = data.find(entry => entry.id === id)
     if (!item) throw new Error('Упражнение не найдено')
     return { name: item.name, description: item.description, category: item.category,
-      metrics: (item.exercisesMetrics ?? []).map(measure), equipment: (item.exerciseEquipments ?? []).map(equipment), media: storedMedia(item.imageFileId), video: storedMedia(item.fileId, 'Видео') }
+      metrics: (item.exercisesMetrics ?? []).map(measure), equipment: (item.exerciseEquipments ?? []).map(equipment), media: storedMedia(item.imageFileId), video: storedMedia(item.videoFileId, 'Видео') }
   },
   async saveExercise(value, id) {
     const request = createRequest(value)

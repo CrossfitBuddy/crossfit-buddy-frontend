@@ -12,6 +12,12 @@ type Props = {
   onChange?: (event: { fileList: UploadFile[] }) => void
 }
 
+function LocalPreview({ source, video }: { source: File; video: boolean }) {
+  const [url] = useState(() => URL.createObjectURL(source))
+  useEffect(() => () => URL.revokeObjectURL(url), [url])
+  return video ? <video controls src={url} className="max-w-full" /> : <img src={url} alt="Изображение" className="max-h-40" />
+}
+
 function Preview({ id, video }: { id: string; video: boolean }) {
   const [url, setUrl] = useState('')
   const [attempt, retry] = useState(0)
@@ -49,15 +55,15 @@ export function ImageUpload({ label, video = false, fileList = [], disabled, onC
   useEffect(() => () => active.current?.abort(), [])
 
   async function start(source: File) {
-    if (video ? !source.type.startsWith('video/') : !IMAGE_TYPES.includes(source.type)) {
-      message.error(video ? 'Выберите видеофайл' : 'Можно загрузить только JPG или PNG')
+    if (video ? source.type !== 'video/mp4' : !IMAGE_TYPES.includes(source.type)) {
+      message.error(video ? 'Можно загрузить только MP4' : 'Можно загрузить только JPG или PNG')
       return
     }
     active.current?.abort()
     const controller = new AbortController()
     active.current = controller
     retryFile.current = source
-    const item: UploadFile = { uid: crypto.randomUUID(), name: source.name, status: 'uploading' }
+    const item: UploadFile = { uid: crypto.randomUUID(), name: source.name, status: 'uploading', originFileObj: source as UploadFile['originFileObj'] }
     emit.current?.({ fileList: [item] })
     try {
       const fileId = await uploadMedia(source, controller.signal)
@@ -69,7 +75,7 @@ export function ImageUpload({ label, video = false, fileList = [], disabled, onC
 
   return <div>
     <input type="file" ref={input} aria-label={label} hidden disabled={disabled}
-      accept={video ? 'video/*' : '.png,.jpg,.jpeg'} onChange={event => {
+      accept={video ? 'video/mp4' : '.png,.jpg,.jpeg'} onChange={event => {
         const selected = event.target.files?.[0]
         event.target.value = ''
         if (selected) void start(selected)
@@ -79,7 +85,7 @@ export function ImageUpload({ label, video = false, fileList = [], disabled, onC
       <span>{file.name}</span>
       {file.status === 'uploading' && <span role="status"> Загрузка…</span>}
       {file.status === 'error' && <span role="alert"> Не удалось загрузить файл. <Button onClick={() => retryFile.current && void start(retryFile.current)}>Повторить</Button></span>}
-      {file.status === 'done' && <Preview key={file.response.fileId} id={file.response.fileId} video={video} />}
+      {file.originFileObj ? <LocalPreview key={file.uid} source={file.originFileObj} video={video} /> : file.status === 'done' && <Preview key={file.response.fileId} id={file.response.fileId} video={video} />}
       <Button disabled={disabled} onClick={() => { active.current?.abort(); emit.current?.({ fileList: [] }) }}>Удалить файл</Button>
     </div>}
   </div>
