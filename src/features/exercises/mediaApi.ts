@@ -4,9 +4,13 @@ import type { UploadFile } from 'antd'
 type UploadLink = { fileId: string; uploadUrl: string; headers: Record<string, string>; expiresAt: string }
 export type DownloadLink = { downloadUrl: string; expiresAt: string }
 
+const contentTypes: Record<string, string> = { 'image/jpeg': 'JPEG', 'image/png': 'PNG', 'video/mp4': 'MP4' }
+
 export async function uploadMedia(file: File, signal: AbortSignal) {
+  const contentType = contentTypes[file.type]
+  if (!contentType) throw new Error('Поддерживаются только JPG, PNG и MP4')
   const { data } = await api.post<UploadLink>('/v1/files/upload-url', {
-    fileName: file.name, contentType: ({ 'image/jpeg': 'JPEG', 'image/png': 'PNG', 'video/mp4': 'MP4' } as Record<string, string>)[file.type], size: file.size,
+    fileName: file.name, contentType, size: file.size,
   }, { signal })
   const response = await fetch(data.uploadUrl, {
     method: 'PUT', headers: data.headers, body: file, credentials: 'omit', signal,
