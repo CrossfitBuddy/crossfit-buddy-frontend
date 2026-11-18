@@ -34,7 +34,7 @@ export const appRoutes: AppRoute[] = [
   { path: '/exercises', title: 'Упражнения', roles: allRoles, element: <ExercisesEntry />, icon: ListChecks },
   { path: '/exercises/new', title: 'Новое упражнение', roles: ['ADMIN'], element: <ExerciseEditorPage /> },
   { path: '/exercises/:id/edit', title: 'Редактирование упражнения', roles: ['ADMIN'], element: <ExerciseEditorPage /> },
-  { path: '/round', title: 'Раунд', roles: allRoles, element: <RoundForm /> },
+  { path: '/round', title: 'Раунд', roles: ['ATHLETE', 'TRAINER'], element: <RoundForm /> },
   { path: '/formats', title: 'Форматы', roles: ['ADMIN'], element: <PlaceholderPage title="Форматы" />, icon: Layers },
   { path: '/profile', title: 'Профиль', roles: allRoles, element: <ProfilePage />, icon: UserRound },
 ]

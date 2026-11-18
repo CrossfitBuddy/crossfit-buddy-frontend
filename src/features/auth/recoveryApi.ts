@@ -23,6 +23,6 @@ async function request(operation: () => Promise<unknown>) {
 }
 
 export const recoveryApi: RecoveryApi = {
-  requestCode: (email) => request(() => api.post('/api/v1/auth/password/request', { email: email.trim() })),
-  resetPassword: (values) => request(() => api.post('/api/v1/auth/password/confirm', values)),
+  requestCode: (email) => request(() => api.post('/v1/auth/password/request', { email: email.trim() })),
+  resetPassword: (values) => request(() => api.post('/v1/auth/password/confirm', values)),
 }
