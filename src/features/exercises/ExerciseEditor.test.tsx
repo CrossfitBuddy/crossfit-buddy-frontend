@@ -36,6 +36,7 @@ const saveButton = () => screen.getByRole('button', { name: 'Сохранить'
 
 async function fillMain(user: ReturnType<typeof userEvent.setup>) {
   await user.type(await screen.findByLabelText('Название'), '  Бёрпи  ')
+  await user.selectOptions(screen.getByLabelText('Категория'), 'CARDIO')
   await user.type(screen.getByLabelText('Описание'), 'Упор лёжа, отжимание и прыжок вверх')
 }
 
@@ -49,6 +50,7 @@ describe('Форма упражнения', () => {
 
     expect(await screen.findByText('Список упражнений')).toBeInTheDocument()
     expect(saveExercise).toHaveBeenCalledWith({
+      category: 'CARDIO',
       name: 'Бёрпи',
       description: 'Упор лёжа, отжимание и прыжок вверх',
       media: [],
@@ -177,4 +179,18 @@ describe('Форма упражнения', () => {
     expect(await screen.findByText('Не удалось открыть упражнение')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Сохранить' })).not.toBeInTheDocument()
   })
+})
+
+it('передаёт оставшееся оборудование после удаления метрики, свойства и другого оборудования', async () => {
+  const { user, saveExercise } = setup(demoExerciseId)
+  await user.click(await screen.findByRole('button', { name: 'Удалить метрику' }))
+  await user.click(screen.getByRole('button', { name: 'Удалить свойство' }))
+  await user.click(screen.getByRole('button', { name: 'Добавить оборудование' }))
+  await user.click(screen.getAllByRole('button', { name: 'Удалить оборудование' })[1])
+  await waitFor(() => expect(saveButton()).toBeEnabled())
+  await user.click(saveButton())
+  await waitFor(() => expect(saveExercise).toHaveBeenCalledWith(expect.objectContaining({
+    metrics: [],
+    equipment: [expect.objectContaining({ name: 'Гиря', properties: [] })],
+  }), demoExerciseId))
 })
