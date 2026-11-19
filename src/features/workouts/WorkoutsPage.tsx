@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
+import { Button } from 'antd'
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { resetWorkoutDraft } from './workoutDraft'
 import { getApiErrorStatus } from '../../api/session'
 import { useAuth } from '../../app/auth/useAuth'
 import { WorkoutCardScreen } from './card/WorkoutCardScreen'
@@ -127,6 +129,13 @@ function WorkoutList() {
 export function WorkoutsPage() {
   const { workoutId } = useParams()
   const { user, activeRole, signOut } = useAuth()
+  const navigate = useNavigate()
+  const canCreate = !workoutId && (activeRole === 'ATHLETE' || activeRole === 'TRAINER')
+
+  const startCreate = () => {
+    resetWorkoutDraft()
+    navigate('/workouts/new')
+  }
 
   return (
     <div className="min-h-full bg-[#f7f7f5] text-[#171c18]">
@@ -144,7 +153,16 @@ export function WorkoutsPage() {
               <WorkoutCardScreen id={workoutId} accountKey={`${user.id}:${activeRole}`} onSessionExpired={signOut} />
             )}
           </>
-        ) : <WorkoutList />}
+        ) : (
+          <>
+            {canCreate ? (
+              <Button type="primary" block size="large" onClick={startCreate}>
+                Создать тренировку
+              </Button>
+            ) : null}
+            <WorkoutList />
+          </>
+        )}
       </div>
     </div>
   )
