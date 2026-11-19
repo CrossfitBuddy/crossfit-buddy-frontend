@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, it } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { ExerciseCatalog } from './ExerciseCatalog'
-import { RoundForm } from './RoundForm'
+import { RoundEditorPage } from './RoundEditorPage'
 import { resetSelection } from './selection'
 
 beforeEach(() => resetSelection())
@@ -13,7 +13,7 @@ function renderAt(path = '/exercises') {
     <MemoryRouter initialEntries={[path]}>
       <Routes>
         <Route path="/exercises" element={<ExerciseCatalog />} />
-        <Route path="/round" element={<RoundForm />} />
+        <Route path="/round" element={<RoundEditorPage />} />
       </Routes>
     </MemoryRouter>,
   )
@@ -102,4 +102,61 @@ it('добавляет упражнение повторно, меняет по�
     expect.stringContaining('3. Приседания'),
     expect.stringContaining('4. Скакалка'),
   ])
+})
+
+it('сохраняет параметры каждого вхождения при выборе и передаёт раунд в тренировку', async () => {
+  const user = userEvent.setup()
+  renderAt('/round')
+  expect(screen.getByText('Упражнений пока нет')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Готово' })).toBeDisabled()
+
+  await user.click(screen.getByRole('button', { name: 'Добавить упражнения' }))
+  await user.click(screen.getByRole('button', { name: 'Выбрать Берпи' }))
+  await user.click(screen.getByRole('button', { name: 'Выбрать Берпи' }))
+  await user.click(screen.getByRole('button', { name: 'Выбрать Гребля' }))
+  await user.click(screen.getByRole('button', { name: 'Готово' }))
+
+  for (const [position, value] of [[1, '8'], [2, '12']] as const) {
+    await user.click(screen.getByRole('button', { name: `Настроить ${position} Берпи` }))
+    const settings = within(screen.getByRole('dialog', { name: 'Берпи' }))
+    await user.type(settings.getByRole('spinbutton', { name: 'Количество повторений, раз' }), value)
+    await user.click(settings.getByRole('button', { name: 'Закрыть' }))
+  }
+
+  await user.click(screen.getByRole('button', { name: 'Настроить 3 Гребля' }))
+  const rowing = within(screen.getByRole('dialog', { name: 'Гребля' }))
+  await user.type(rowing.getByRole('spinbutton', { name: 'Дистанция, м' }), '12,5')
+  const duration = rowing.getByRole('spinbutton', { name: 'Время, сек' })
+  await user.type(duration, '1,5')
+  expect(rowing.getByText('Введите целое число.')).toBeInTheDocument()
+  await user.click(rowing.getByRole('button', { name: 'Закрыть' }))
+  expect(screen.getByRole('button', { name: 'Готово' })).toBeDisabled()
+  await user.click(screen.getByRole('button', { name: 'Настроить 3 Гребля' }))
+  const reopenedRowing = within(screen.getByRole('dialog', { name: 'Гребля' }))
+  expect(reopenedRowing.getByRole('spinbutton', { name: 'Дистанция, м' })).toHaveDisplayValue('12,5')
+  await user.clear(reopenedRowing.getByRole('spinbutton', { name: 'Время, сек' }))
+  await user.click(reopenedRowing.getByRole('button', { name: 'Закрыть' }))
+
+  await user.click(screen.getByRole('button', { name: 'Добавить упражнения' }))
+  await user.click(screen.getByRole('button', { name: 'Выбрать Скакалка' }))
+  await user.click(screen.getByRole('button', { name: 'Готово' }))
+  for (const [position, value] of [[1, '8'], [2, '12']] as const) {
+    await user.click(screen.getByRole('button', { name: `Настроить ${position} Берпи` }))
+    const repeated = within(screen.getByRole('dialog', { name: 'Берпи' }))
+    expect(repeated.getByRole('spinbutton', { name: 'Количество повторений, раз' })).toHaveDisplayValue(value)
+    await user.click(repeated.getByRole('button', { name: 'Закрыть' }))
+  }
+  await user.click(screen.getByRole('button', { name: 'Удалить 1 Берпи' }))
+  await user.click(screen.getByRole('button', { name: 'Готово' }))
+
+  expect(screen.getByRole('heading', { name: 'Черновик тренировки' })).toBeInTheDocument()
+  const items = within(screen.getByRole('list', { name: 'Подтверждённые упражнения' })).getAllByRole('listitem')
+  expect(items.map((item) => item.textContent)).toEqual([
+    expect.stringContaining('1. Берпи'),
+    expect.stringContaining('2. Гребля'),
+    '3. Скакалка',
+  ])
+  expect(within(items[0]).getByText('Количество повторений: 12 раз')).toBeInTheDocument()
+  expect(screen.queryByText('Количество повторений: 8 раз')).not.toBeInTheDocument()
+  expect(within(items[1]).getByText('Дистанция: 12.5 м')).toBeInTheDocument()
 })
