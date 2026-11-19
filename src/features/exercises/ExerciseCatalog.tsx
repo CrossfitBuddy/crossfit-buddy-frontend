@@ -2,11 +2,13 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { exerciseCategories, exerciseEquipment, exercises, filterExercises, groupByLetter } from './catalog'
 import { Illustration } from './Illustration'
+import { getActiveStageIndex, rememberWorkoutCreateScrollStage } from '../workouts/roundFlow'
 import { addExercise, confirmSelection, movePending, removeLastPending, removePendingAt, useSelection } from './selection'
 
 export function ExerciseCatalog() {
   const navigate = useNavigate()
   const { pending } = useSelection()
+  const workoutStageIndex = getActiveStageIndex()
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('all')
   const [equipment, setEquipment] = useState('all')
@@ -23,7 +25,22 @@ export function ExerciseCatalog() {
     <div className="bg-[#f7f7f5] text-[#171c18]">
       <header className="bg-[#101914] px-6 pb-6 pt-12 text-white">
         <p className="text-sm font-bold uppercase tracking-[0.24em] text-[#a3e635]">CrossfitBuddy</p>
-        <h1 className="mt-3 text-4xl font-black">Упражнения</h1>
+        <div className="mt-3 flex items-start justify-between gap-3">
+          <h1 className="text-4xl font-black">Упражнения</h1>
+          {workoutStageIndex !== null ? (
+            <button
+              type="button"
+              className="shrink-0 pt-2 text-sm font-bold text-lime-300"
+              onClick={() => {
+                const stageIndex = getActiveStageIndex()
+                if (stageIndex !== null) rememberWorkoutCreateScrollStage(stageIndex)
+                navigate('/workouts/new', stageIndex !== null ? { state: { scrollToStage: stageIndex } } : undefined)
+              }}
+            >
+              К форме
+            </button>
+          ) : null}
+        </div>
         <label className="mt-6 block text-sm text-stone-300">
           Поиск
           <input
