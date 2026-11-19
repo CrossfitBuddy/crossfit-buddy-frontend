@@ -39,6 +39,12 @@ export const resetSelection = () => {
   emit({ pending: [], round: [] })
 }
 
+export const loadRoundIntoSelection = (round: RoundExercise[]) => {
+  const maxKey = round.reduce((max, item) => Math.max(max, Number(item.key) || 0), 0)
+  nextKey = maxKey + 1
+  emit({ pending: [], round: round.map((item) => ({ ...item, parameters: { ...item.parameters } })) })
+}
+
 export const addExercise = (exercise: string | Exercise) => {
   const item: SelectedExercise = typeof exercise === 'string'
     ? { key: String(nextKey++), exerciseId: exercise }
