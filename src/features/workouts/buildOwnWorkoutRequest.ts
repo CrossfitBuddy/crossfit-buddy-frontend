@@ -1,5 +1,6 @@
 import type { SelectedExercise } from '../exercises/selection'
 import { catalogExerciseIdToUuid } from './exerciseIdAdapter'
+import { mapExerciseParameters } from './mapExerciseParameters'
 import type { OwnWorkoutRequest, WorkoutExerciseRequest, WorkoutStageRequest } from './ownWorkoutTypes'
 import type { WorkoutDraft, WorkoutStageDraft } from './workoutDraft'
 import { findCatalogItem } from './workoutFormatCatalog'
@@ -8,7 +9,8 @@ import { areStageParamsValid } from './workoutStageParams'
 const mapExercises = (round: SelectedExercise[]): WorkoutExerciseRequest[] =>
   round.flatMap((item) => {
     const exerciseId = catalogExerciseIdToUuid(item.exerciseId)
-    return exerciseId ? [{ exerciseId }] : []
+    if (!exerciseId) return []
+    return [{ exerciseId, ...mapExerciseParameters(item.parameters) }]
   })
 
 const mapStage = (stage: WorkoutStageDraft): WorkoutStageRequest | null => {

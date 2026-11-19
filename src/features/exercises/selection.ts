@@ -3,6 +3,8 @@ import { useSyncExternalStore } from 'react'
 export type SelectedExercise = {
   key: string
   exerciseId: string
+  /** Значения метрик из редактора раунда (#19079). */
+  parameters?: Record<string, number>
 }
 
 type SelectionState = {

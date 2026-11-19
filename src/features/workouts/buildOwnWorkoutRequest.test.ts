@@ -51,3 +51,16 @@ it('отдаёт name null если название пустое', () => {
   const request = buildOwnWorkoutRequest(getWorkoutDraft())
   expect(request!.name).toBeNull()
 })
+
+it('кладёт параметры упражнения в DTO', () => {
+  const amrap = findCatalogItem('AMRAP')!
+  patchWorkoutDraft({ datetime: '2026-11-19T10:00:00+07:00' })
+  patchWorkoutStage(WOD_STAGE_INDEX, {
+    format: 'AMRAP',
+    stageFormatId: amrap.stageFormatId,
+    params: defaultParamsForCatalogItem(amrap),
+    round: [{ key: '1', exerciseId: 'burpee', parameters: { repetitions: 15, weight: 20 } }],
+  })
+  const request = buildOwnWorkoutRequest(getWorkoutDraft())
+  expect(request?.stages[0].rounds[0].exercises[0]).toMatchObject({ repetitions: 15, weightKg: 20 })
+})
