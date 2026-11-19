@@ -79,3 +79,14 @@ it('переводит durationMinutes в durationSeconds', () => {
   const request = buildOwnWorkoutRequest(getWorkoutDraft())
   expect(request!.durationSeconds).toBe(45 * 60)
 })
+
+it('кладёт параметры упражнения в DTO', () => {
+  patchWorkoutDraft({ datetime: '2026-11-19T10:00:00+07:00' })
+  patchWorkoutStage(WOD_STAGE_INDEX, {
+    format: 'AMRAP',
+    params: defaultParamsForCatalogItem(findCatalogItem('AMRAP')!),
+    round: [{ key: '1', exerciseId: 'burpee', parameters: { repetitions: 15, weight: 20 } }],
+  })
+  const request = buildOwnWorkoutRequest(getWorkoutDraft())
+  expect(request?.stages[0].rounds[0].exercises[0]).toMatchObject({ repetitions: 15, weightKg: 20 })
+})
