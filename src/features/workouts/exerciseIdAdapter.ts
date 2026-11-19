@@ -18,3 +18,10 @@ const MOCK_EXERCISE_UUID: Record<string, string> = {
 }
 
 export const catalogExerciseIdToUuid = (exerciseId: string): string | null => MOCK_EXERCISE_UUID[exerciseId] ?? null
+
+const UUID_TO_CATALOG = Object.fromEntries(
+  Object.entries(MOCK_EXERCISE_UUID).map(([catalogId, uuid]) => [uuid.toLowerCase(), catalogId]),
+) as Record<string, string>
+
+export const catalogUuidToExerciseId = (exerciseUuid: string): string | null =>
+  UUID_TO_CATALOG[exerciseUuid.toLowerCase()] ?? null

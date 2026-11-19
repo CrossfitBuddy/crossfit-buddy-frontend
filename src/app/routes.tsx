@@ -8,6 +8,7 @@ import { ExerciseEditorPage } from '../pages/ExerciseEditorPage'
 import { PlaceholderPage } from '../pages/PlaceholderPage'
 import { WorkoutCreatePage } from '../pages/WorkoutCreatePage'
 import { WorkoutDetailPage } from '../pages/WorkoutDetailPage'
+import { WorkoutEditPage } from '../pages/WorkoutEditPage'
 import { WorkoutsPage } from '../pages/WorkoutsPage'
 import { ProfilePage } from '../pages/ProfilePage'
 import { useAuth } from './auth/useAuth'
@@ -40,6 +41,12 @@ export const appRoutes: AppRoute[] = [
   { path: '/workouts', title: 'Тренировки', roles: ['ATHLETE', 'TRAINER'], element: <WorkoutsEntry />, icon: Dumbbell },
   { path: '/workouts/new', title: 'Новая тренировка', roles: ['ATHLETE', 'TRAINER'], element: <WorkoutCreatePage /> },
   { path: '/workouts/:workoutId', title: 'Тренировка', roles: ['ATHLETE', 'TRAINER'], element: <WorkoutDetailPage /> },
+  {
+    path: '/workouts/:workoutId/edit',
+    title: 'Редактирование тренировки',
+    roles: ['ATHLETE', 'TRAINER'],
+    element: <WorkoutEditPage />,
+  },
   { path: '/history', title: 'История', roles: ['ATHLETE'], element: <PlaceholderPage title="История" />, icon: History },
   { path: '/athletes', title: 'Атлеты', roles: ['TRAINER'], element: <PlaceholderPage title="Атлеты" />, icon: Users },
   { path: '/exercises', title: 'Упражнения', roles: allRoles, element: <ExercisesEntry />, icon: ListChecks },
