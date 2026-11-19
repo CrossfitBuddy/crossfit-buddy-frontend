@@ -1,6 +1,11 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { clearRoundFlow, getActiveStageIndex, rememberWorkoutCreateScrollStage } from '../workouts/roundFlow'
+import {
+  clearRoundFlow,
+  getActiveStageIndex,
+  getWorkoutFormReturnPath,
+  rememberWorkoutCreateScrollStage,
+} from '../workouts/roundFlow'
 import { setStageRound } from '../workouts/workoutDraft'
 import { RoundForm } from './RoundForm'
 import { resetSelection } from './selection'
@@ -10,7 +15,7 @@ export function RoundRoute() {
   const stageIndex = getActiveStageIndex()
 
   useEffect(() => {
-    if (stageIndex === null) navigate('/workouts/new', { replace: true })
+    if (stageIndex === null) navigate(getWorkoutFormReturnPath(), { replace: true })
   }, [navigate, stageIndex])
 
   if (stageIndex === null) return null
@@ -23,7 +28,7 @@ export function RoundRoute() {
         rememberWorkoutCreateScrollStage(stageIndex)
         clearRoundFlow()
         resetSelection()
-        navigate('/workouts/new', { state: { scrollToStage: stageIndex } })
+        navigate(getWorkoutFormReturnPath(), { state: { scrollToStage: stageIndex } })
       }}
     />
   )

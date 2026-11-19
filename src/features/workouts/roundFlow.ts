@@ -1,5 +1,12 @@
 let activeStageIndex: number | null = null
 let returnToStageIndex: number | null = null
+let formReturnPath = '/workouts/new'
+
+export const setWorkoutFormReturnPath = (path: string) => {
+  formReturnPath = path
+}
+
+export const getWorkoutFormReturnPath = () => formReturnPath
 
 export const getActiveStageIndex = () => activeStageIndex
 
