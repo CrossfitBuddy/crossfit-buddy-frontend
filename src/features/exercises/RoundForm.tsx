@@ -28,7 +28,7 @@ export function RoundForm({ onConfirm }: RoundFormProps) {
   const { round } = useSelection()
   const [editingKey, setEditingKey] = useState<string | null>(null)
   const items = round.flatMap((item) => {
-    const exercise = exercises.find((entry) => entry.id === item.exerciseId)
+    const exercise = item.exercise ?? exercises.find((entry) => entry.id === item.exerciseId)
     return exercise ? [{ ...item, exercise }] : []
   })
   const editing = items.find((item) => item.key === editingKey)
