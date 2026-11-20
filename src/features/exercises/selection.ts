@@ -1,8 +1,11 @@
 import { useSyncExternalStore } from 'react'
+import type { Exercise } from './catalog'
+import { resetCatalogSearch } from './catalogSearch'
 
 export type SelectedExercise = {
   key: string
   exerciseId: string
+  exercise?: Exercise
 }
 
 export type RoundExercise = SelectedExercise & {
@@ -32,11 +35,14 @@ export const getSelection = () => state
 
 export const resetSelection = () => {
   nextKey = 1
+  resetCatalogSearch()
   emit({ pending: [], round: [] })
 }
 
-export const addExercise = (exerciseId: string) => {
-  const item = { key: String(nextKey++), exerciseId }
+export const addExercise = (exercise: string | Exercise) => {
+  const item: SelectedExercise = typeof exercise === 'string'
+    ? { key: String(nextKey++), exerciseId: exercise }
+    : { key: String(nextKey++), exerciseId: exercise.id, exercise: { ...exercise } }
   emit({ ...state, pending: [...state.pending, item] })
 }
 

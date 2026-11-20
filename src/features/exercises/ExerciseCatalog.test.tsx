@@ -2,6 +2,7 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, it } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ExerciseCatalog } from './ExerciseCatalog'
 import { RoundEditorPage } from './RoundEditorPage'
 import { addExercise, confirmSelection, resetSelection, updateRoundParameter } from './selection'
@@ -9,18 +10,22 @@ import { addExercise, confirmSelection, resetSelection, updateRoundParameter } f
 beforeEach(() => resetSelection())
 
 function renderAt(path = '/exercises') {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
   render(
-    <MemoryRouter initialEntries={[path]}>
-      <Routes>
-        <Route path="/exercises" element={<ExerciseCatalog />} />
-        <Route path="/round" element={<RoundEditorPage />} />
-      </Routes>
-    </MemoryRouter>,
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={[path]}>
+        <Routes>
+          <Route path="/exercises" element={<ExerciseCatalog />} />
+          <Route path="/round" element={<RoundEditorPage />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
   )
 }
 
-it('показывает поиск, фильтры, алфавитный список и кнопку готово', () => {
+it('показывает поиск, фильтры, алфавитный список и кнопку готово', async () => {
   renderAt()
+  await screen.findByText('Берпи')
   expect(screen.getByLabelText('Поиск')).toBeInTheDocument()
   expect(screen.getByLabelText('Категория')).toBeInTheDocument()
   expect(screen.getByLabelText('Оборудование')).toBeInTheDocument()
@@ -43,12 +48,12 @@ it('фильтрует по тексту, категории и оборудов
 it('после закрытия подробностей сохраняет поиск, фильтры и выбор', async () => {
   const user = userEvent.setup()
   renderAt()
-  await user.click(screen.getByRole('button', { name: 'Выбрать Берпи' }))
+  await user.click(await screen.findByRole('button', { name: 'Выбрать Берпи' }))
   await user.type(screen.getByLabelText('Поиск'), 'бер')
   await user.selectOptions(screen.getByLabelText('Категория'), 'Кардио')
   await user.click(screen.getByRole('button', { name: 'Подробнее Берпи' }))
   expect(screen.getByRole('region', { name: 'Подробности упражнения' })).toBeInTheDocument()
-  expect(screen.getByRole('heading', { name: 'Берпи' })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'Берпи' })).toBeInTheDocument()
   expect(screen.getByText('Видеопример не добавлен')).toBeInTheDocument()
   await user.click(screen.getByRole('button', { name: 'Закрыть' }))
   expect(screen.getByLabelText('Поиск')).toHaveValue('бер')
@@ -62,7 +67,7 @@ it('после закрытия подробностей сохраняет по
 it('добавляет упражнение повторно, меняет порядок и возвращает его в раунд', async () => {
   const user = userEvent.setup()
   renderAt()
-  await user.click(screen.getByRole('button', { name: 'Выбрать Берпи' }))
+  await user.click(await screen.findByRole('button', { name: 'Выбрать Берпи' }))
   await user.click(screen.getByRole('button', { name: 'Выбрать Берпи' }))
   await user.click(screen.getByRole('button', { name: 'Выбрать Приседания' }))
   expect(screen.getByText('Выбрано: 3')).toBeInTheDocument()
