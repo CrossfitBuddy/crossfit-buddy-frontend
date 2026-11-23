@@ -13,12 +13,19 @@ import { getSelection, resetSelection } from './selection'
 const squat: Exercise = {
   id: '60fdbba6-0f4a-4dda-9332-f10a5e35ea55', name: 'Приседания из каталога',
   category: 'Силовые', equipment: 'Гантели', description: 'Описание из списка',
+  parameters: [{ id: '919022a0-ff7c-4136-b881-fa08706df7b5', name: 'Повторения', valueType: 'INTEGER', unit: 'раз' }],
+  equipmentDetails: [{ id: 'f554e542-b725-488d-8f8d-11c12ed713ed', name: 'Гантели', parameters: [
+    { id: 'e87f695c-070a-4b1a-ba55-a54d2ec9f4f9', name: 'Вес', valueType: 'DECIMAL', unit: 'кг' },
+  ] }],
 }
 const run: Exercise = {
   id: 'aaf1b268-4315-41d4-b0a8-7d6f285d5280', name: 'Бег из каталога',
   category: 'Кардио', equipment: 'Без оборудования', description: 'Описание бега',
 }
-const filters: CatalogFilters = { categories: ['Силовые', 'Кардио'], equipment: ['Гантели', 'Без оборудования'] }
+const filters: CatalogFilters = {
+  categories: ['Силовые', 'Кардио'].map(value => ({ value, label: value })),
+  equipment: ['Гантели', 'Без оборудования'].map(value => ({ value, label: value })),
+}
 
 function deferred<T>() {
   let resolve!: (value: T) => void
@@ -107,6 +114,8 @@ it('повторно загружает детали после ошибки, с
   expect(await screen.findByRole('alert')).toHaveTextContent('Не удалось загрузить упражнение')
   await user.click(screen.getByRole('button', { name: 'Повторить загрузку упражнения' }))
   expect(await screen.findByText('Полное описание с сервера')).toBeInTheDocument()
+  expect(screen.getByRole('region', { name: 'Метрики упражнения' })).toHaveTextContent('Повторения, раз')
+  expect(screen.getByRole('region', { name: 'Свойства: Гантели' })).toHaveTextContent('Вес, кг')
   expect(api.getExercise).toHaveBeenLastCalledWith(squat.id, expect.any(AbortSignal))
   await user.click(screen.getByRole('button', { name: 'Закрыть' }))
   expect(screen.getByLabelText('Поиск')).toHaveValue('прис')
@@ -129,6 +138,8 @@ it('переносит серверные ID, порядок и повторы �
   await user.click(screen.getByRole('button', { name: 'Готово' }))
   const entries = getSelection().round
   expect(entries.map(item => item.exerciseId)).toEqual([squat.id, squat.id, run.id])
+  expect(entries[0].exercise?.parameters).toEqual(squat.parameters)
+  expect(entries[1].exercise?.equipmentDetails).toEqual(squat.equipmentDetails)
   expect(new Set(entries.map(item => item.key)).size).toBe(3)
   expect(within(screen.getByRole('list', { name: 'Упражнения раунда' })).getAllByRole('listitem').map(item => item.textContent)).toEqual([
     expect.stringContaining('1. Приседания из каталога'),

@@ -2,13 +2,16 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { groupByLetter } from './catalog'
-import type { CatalogApi } from './catalogApi'
+import { catalogApi, type CatalogApi, type CatalogOption } from './catalogApi'
 import { updateCatalogSearch, useCatalogSearch } from './catalogSearch'
-import { mockCatalogApi } from './mockCatalogApi'
+import { CatalogVideo } from './CatalogVideo'
 import { Illustration } from './Illustration'
 import { addExercise, confirmSelection, movePending, removeLastPending, removePendingAt, useSelection } from './selection'
 
-export function ExerciseCatalog({ api = mockCatalogApi }: { api?: CatalogApi }) {
+const withSelected = (options: CatalogOption[] = [], value: string) =>
+  value === 'all' || options.some(item => item.value === value) ? options : [...options, { value, label: value }]
+
+export function ExerciseCatalog({ api = catalogApi }: { api?: CatalogApi }) {
   const navigate = useNavigate()
   const { pending } = useSelection()
   const { query, category, equipment } = useCatalogSearch()
@@ -33,8 +36,8 @@ export function ExerciseCatalog({ api = mockCatalogApi }: { api?: CatalogApi }) 
   const visible = [...(catalog.data ?? [])].sort((left, right) => left.name.localeCompare(right.name, 'ru'))
   const groups = groupByLetter(visible)
   const opened = details.data
-  const categories = Array.from(new Set([...(filters.data?.categories ?? []), ...(category !== 'all' ? [category] : [])]))
-  const equipmentOptions = Array.from(new Set([...(filters.data?.equipment ?? []), ...(equipment !== 'all' ? [equipment] : [])]))
+  const categories = withSelected(filters.data?.categories, category)
+  const equipmentOptions = withSelected(filters.data?.equipment, equipment)
   const picked = pending.flatMap((item) => {
     const exercise = item.exercise ?? catalog.data?.find((entry) => entry.id === item.exerciseId)
     return exercise ? [{ ...item, exercise }] : []
@@ -59,14 +62,14 @@ export function ExerciseCatalog({ api = mockCatalogApi }: { api?: CatalogApi }) 
             Категория
             <select aria-label="Категория" value={category} onChange={(event) => updateCatalogSearch({ category: event.target.value })} className="mt-2 h-11 w-full rounded-xl bg-white px-2 text-base text-[#171c18]">
               <option value="all">Все</option>
-              {categories.map((item) => <option key={item} value={item}>{item}</option>)}
+              {categories.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
             </select>
           </label>
           <label className="text-sm text-stone-300">
             Оборудование
             <select aria-label="Оборудование" value={equipment} onChange={(event) => updateCatalogSearch({ equipment: event.target.value })} className="mt-2 h-11 w-full rounded-xl bg-white px-2 text-base text-[#171c18]">
               <option value="all">Все</option>
-              {equipmentOptions.map((item) => <option key={item} value={item}>{item}</option>)}
+              {equipmentOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
             </select>
           </label>
         </div>
@@ -91,8 +94,20 @@ export function ExerciseCatalog({ api = mockCatalogApi }: { api?: CatalogApi }) 
               <h2 className="mt-4 text-3xl font-black">{opened.name}</h2>
               <p className="mt-2 text-stone-500">{opened.category} · {opened.equipment}</p>
               <p className="mt-4 whitespace-pre-wrap text-base">{opened.description}</p>
+              {!!opened.parameters?.length && <section className="mt-6" aria-label="Метрики упражнения">
+                <h3 className="text-lg font-bold">Метрики</h3>
+                <ul className="mt-2 space-y-1">
+                  {opened.parameters.map(item => <li key={item.id}>{item.name}, {item.unit} ({item.valueType === 'INTEGER' ? 'целое число' : 'вещественное число'})</li>)}
+                </ul>
+              </section>}
+              {opened.equipmentDetails?.map(item => <section key={item.id} className="mt-4" aria-label={`Свойства: ${item.name}`}>
+                <h3 className="font-bold">{item.name}</h3>
+                <ul className="mt-2 space-y-1">
+                  {item.parameters.map(property => <li key={property.id}>{property.name}, {property.unit} ({property.valueType === 'INTEGER' ? 'целое число' : 'вещественное число'})</li>)}
+                </ul>
+              </section>)}
               <h3 className="mt-6 text-lg font-bold">Видеопример</h3>
-              <p className="mt-2 text-stone-500">Видеопример не добавлен</p>
+              <CatalogVideo url={opened.videoUrl} />
             </>
           )}
         </section>

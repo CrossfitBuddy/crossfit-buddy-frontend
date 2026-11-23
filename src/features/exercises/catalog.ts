@@ -1,6 +1,9 @@
 import type { Measure } from './types'
 
-export type ExerciseParameter = Measure & { id: string; min: number; max: number; precision?: number }
+export type ExerciseParameter = Measure & { id: string; min?: number; max?: number; precision?: number }
+
+export type CatalogParameter = ExerciseParameter
+export type CatalogEquipment = { id: string; name: string; parameters: CatalogParameter[] }
 
 export type Exercise = {
   id: string
@@ -8,7 +11,12 @@ export type Exercise = {
   category: string
   equipment: string
   description: string
-  parameters: ExerciseParameter[]
+  parameters?: ExerciseParameter[]
+  imageUrl?: string
+  videoUrl?: string
+  imageFileId?: string
+  videoFileId?: string
+  equipmentDetails?: CatalogEquipment[]
 }
 
 export const exerciseCategories = ['Грудь', 'Икры', 'Кардио', 'Ноги', 'Плечи', 'Пресс', 'Руки', 'Спина']

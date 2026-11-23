@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import type { Exercise } from './catalog'
+import { isMediaUrl } from './catalogMedia'
 
 const tones: Record<string, string> = {
   Грудь: '#65a30d',
@@ -13,6 +15,11 @@ const tones: Record<string, string> = {
 
 export function Illustration({ exercise, large = false }: { exercise: Exercise; large?: boolean }) {
   const size = large ? 160 : 56
+  const [failedUrl, setFailedUrl] = useState<string>()
+  if (exercise.imageUrl && isMediaUrl(exercise.imageUrl) && failedUrl !== exercise.imageUrl) {
+    return <img src={exercise.imageUrl} alt={`Иллюстрация: ${exercise.name}`} width={size} height={size}
+      className="shrink-0 rounded-2xl object-contain" style={{ width: size, height: size }} onError={() => setFailedUrl(exercise.imageUrl)} />
+  }
   return (
     <svg width={size} height={size} viewBox="0 0 80 80" role="img" aria-label={`Иллюстрация: ${exercise.name}`} className="shrink-0 rounded-2xl">
       <rect width="80" height="80" rx="16" fill={tones[exercise.category] ?? '#65a30d'} />

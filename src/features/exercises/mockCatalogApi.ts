@@ -1,11 +1,14 @@
 import { exerciseCategories, exerciseEquipment, exercises, filterExercises } from './catalog'
 import type { CatalogApi } from './catalogApi'
 
-// Данные существующего экрана до согласования API каталога CB-18704.
+// Данные для компонентных проверок каталога.
 export const mockCatalogApi: CatalogApi = {
   async getFilters(signal) {
     signal.throwIfAborted()
-    return { categories: [...exerciseCategories], equipment: [...exerciseEquipment] }
+    return {
+      categories: exerciseCategories.map(value => ({ value, label: value })),
+      equipment: exerciseEquipment.map(value => ({ value, label: value })),
+    }
   },
   async search({ query, category, equipment }, signal) {
     signal.throwIfAborted()

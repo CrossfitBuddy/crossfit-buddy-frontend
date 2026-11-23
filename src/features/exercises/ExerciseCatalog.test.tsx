@@ -4,6 +4,7 @@ import { beforeEach, expect, it } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ExerciseCatalog } from './ExerciseCatalog'
+import { mockCatalogApi } from './mockCatalogApi'
 import { RoundEditorPage } from './RoundEditorPage'
 import { addExercise, confirmSelection, resetSelection, updateRoundParameter } from './selection'
 
@@ -15,7 +16,7 @@ function renderAt(path = '/exercises') {
     <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={[path]}>
         <Routes>
-          <Route path="/exercises" element={<ExerciseCatalog />} />
+          <Route path="/exercises" element={<ExerciseCatalog api={mockCatalogApi} />} />
           <Route path="/round" element={<RoundEditorPage />} />
         </Routes>
       </MemoryRouter>
