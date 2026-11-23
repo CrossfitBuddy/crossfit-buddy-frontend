@@ -19,6 +19,7 @@ const toExercise = (values: Exercise, catalog: ExerciseCatalog): Exercise => ({
   category: values.category,
   name: values.name.trim(),
   description: values.description.trim(),
+  video: values.video ?? [],
   media: values.media ?? [],
   metrics: trimMeasures(values.metrics).map(item => ({
     ...item, id: catalog.metrics.find(m => m.name === item.name && m.unit === item.unit && m.valueType === item.valueType)?.id,
@@ -52,6 +53,8 @@ type ExerciseFormProps = {
 export function ExerciseForm({ initialValues = emptyExercise, catalog, saving, onSave, onCancel }: ExerciseFormProps) {
   const [form] = Form.useForm<Exercise>()
   const values = Form.useWatch([], form)
+  const files = [...(values?.media ?? []), ...(values?.video ?? []), ...(values?.equipment ?? []).flatMap((item: Exercise['equipment'][number]) => item?.image ?? [])]
+  const mediaPending = files.some(file => file.status !== 'done')
   const [valid, setValid] = useState(false)
 
   useEffect(() => {
@@ -68,7 +71,7 @@ export function ExerciseForm({ initialValues = emptyExercise, catalog, saving, o
       requiredMark={false}
       initialValues={initialValues}
       disabled={saving}
-      onFinish={(exercise) => onSave(toExercise(exercise, catalog))}
+      onFinish={(exercise) => { if (!mediaPending && !saving) onSave(toExercise(exercise, catalog)) }}
     >
       <Section title="Основная информация">
         <Form.Item name="name" label="Название" rules={[requiredRule('Название'), { max: 255, message: 'Не более 255 символов' }]}>
@@ -92,7 +95,10 @@ export function ExerciseForm({ initialValues = emptyExercise, catalog, saving, o
           </select>
         </Form.Item>
         <Form.Item name="media" label="Медиафайлы" valuePropName="fileList" getValueFromEvent={fileList} extra="JPG или PNG">
-          <ImageUpload label="Добавить медиафайл" multiple />
+          <ImageUpload label="Добавить медиафайл" disabled={saving} />
+        </Form.Item>
+        <Form.Item name="video" label="Видеопример" valuePropName="fileList" getValueFromEvent={fileList}>
+          <ImageUpload label="Добавить видео" video disabled={saving} />
         </Form.Item>
       </Section>
 
@@ -124,7 +130,7 @@ export function ExerciseForm({ initialValues = emptyExercise, catalog, saving, o
                     >
                       <AutoComplete
                         options={catalog.equipment.map(item => ({ value: item.name, item }))}
-                        onSelect={(_, option) => form.setFieldValue(['equipment', field.name, 'properties'], structuredClone(option.item.properties))}
+                        onSelect={(_, option) => form.setFieldValue(['equipment', field.name], structuredClone(option.item))}
                         filterOption={(input, option) => (option?.value ?? '').toLowerCase().includes(input.toLowerCase())}
                       />
                     </Form.Item>
@@ -144,7 +150,7 @@ export function ExerciseForm({ initialValues = emptyExercise, catalog, saving, o
                     getValueFromEvent={fileList}
                     extra="JPG или PNG"
                   >
-                    <ImageUpload label="Добавить изображение оборудования" maxCount={1} />
+                    <ImageUpload label="Добавить изображение оборудования" disabled={saving} />
                   </Form.Item>
                   <p className="mb-3 font-bold">Свойства</p>
                   <MeasureList
@@ -168,7 +174,7 @@ export function ExerciseForm({ initialValues = emptyExercise, catalog, saving, o
 
       <div className="mt-8 grid grid-cols-2 gap-3">
         <Button size="large" onClick={onCancel}>Отмена</Button>
-        <Button type="primary" htmlType="submit" size="large" disabled={!valid} loading={saving}>
+        <Button type="primary" htmlType="submit" size="large" disabled={!valid || mediaPending} loading={saving}>
           Сохранить
         </Button>
       </div>
