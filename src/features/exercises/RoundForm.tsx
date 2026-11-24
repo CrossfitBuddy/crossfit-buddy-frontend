@@ -13,7 +13,7 @@ function parameterError(item: RoundExercise, parameter: ExerciseParameter) {
   const value = item.parameters[parameter.id]
   if (value === undefined) return undefined
   if (!Number.isFinite(value)) return 'Введите число.'
-  if (value < parameter.min || value > parameter.max) {
+  if ((parameter.min !== undefined && value < parameter.min) || (parameter.max !== undefined && value > parameter.max)) {
     return `Введите значение от ${parameter.min} до ${parameter.max}.`
   }
   if (parameter.valueType === 'INTEGER' && !Number.isInteger(value)) return 'Введите целое число.'
@@ -32,7 +32,7 @@ export function RoundForm({ onConfirm }: RoundFormProps) {
     return exercise ? [{ ...item, exercise }] : []
   })
   const editing = items.find((item) => item.key === editingKey)
-  const hasInvalidParameters = items.some((item) => item.exercise.parameters.some((parameter) => parameterError(item, parameter)))
+  const hasInvalidParameters = items.some((item) => item.exercise.parameters?.some((parameter) => parameterError(item, parameter)))
   const closeSettings = () => setEditingKey(null)
 
   const confirmRound = () => {
@@ -92,8 +92,8 @@ export function RoundForm({ onConfirm }: RoundFormProps) {
           footer={<Button type="primary" onClick={closeSettings}>Закрыть</Button>}
         >
           <div className="space-y-4">
-            {editing.exercise.parameters.length === 0 && <p>Для этого упражнения нет параметров.</p>}
-            {editing.exercise.parameters.map((parameter) => {
+            {!editing.exercise.parameters?.length && <p>Для этого упражнения нет параметров.</p>}
+            {editing.exercise.parameters?.map((parameter) => {
               const error = parameterError(editing, parameter)
               const fieldId = `round-${editing.key}-${parameter.id}`
               return (

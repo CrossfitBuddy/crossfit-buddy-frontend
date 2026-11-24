@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, expect, it, vi } from 'vitest'
 import { ExerciseCatalog } from './ExerciseCatalog'
-import { RoundForm } from './RoundForm'
+import { RoundEditorPage } from './RoundEditorPage'
 import { filterExercises, type Exercise } from './catalog'
 import type { CatalogApi, CatalogFilters } from './catalogApi'
 import { updateCatalogSearch } from './catalogSearch'
@@ -47,7 +47,7 @@ function setup(api: CatalogApi) {
     <MemoryRouter initialEntries={['/exercises']}>
       <Routes>
         <Route path="/exercises" element={<ExerciseCatalog api={api} />} />
-        <Route path="/round" element={<RoundForm />} />
+        <Route path="/round" element={<RoundEditorPage />} />
       </Routes>
     </MemoryRouter>
   </QueryClientProvider>)
@@ -169,4 +169,23 @@ it('позволяет повторно загрузить фильтры пос
   await user.click(screen.getByRole('button', { name: 'Повторить загрузку фильтров' }))
   expect(await screen.findByRole('option', { name: 'Гантели' })).toBeInTheDocument()
   await waitFor(() => expect(api.getFilters).toHaveBeenCalledTimes(2))
+})
+
+it('настраивает повторные серверные упражнения независимо и подтверждает оставшееся вхождение', async () => {
+  const user = setup(createApi())
+  await user.click(await screen.findByRole('button', { name: 'Выбрать Приседания из каталога' }))
+  await user.click(screen.getByRole('button', { name: 'Выбрать Приседания из каталога' }))
+  await user.click(screen.getByRole('button', { name: 'Готово' }))
+  for (const [position, value] of [[1, '8'], [2, '12']] as const) {
+    await user.click(screen.getByRole('button', { name: `Настроить ${position} Приседания из каталога` }))
+    const settings = within(screen.getByRole('dialog'))
+    await user.type(settings.getByRole('spinbutton', { name: 'Повторения, раз' }), value)
+    await user.click(settings.getByRole('button', { name: 'Закрыть' }))
+  }
+  expect(getSelection().round.map(item => item.parameters[squat.parameters![0].id])).toEqual([8, 12])
+  await user.click(screen.getByRole('button', { name: 'Удалить 1 Приседания из каталога' }))
+  await user.click(screen.getByRole('button', { name: 'Готово' }))
+  expect(screen.getByRole('list', { name: 'Подтверждённые упражнения' })).toHaveTextContent('Приседания из каталога')
+  expect(screen.getByText('Повторения: 12 раз')).toBeInTheDocument()
+  expect(screen.queryByText('Повторения: 8 раз')).not.toBeInTheDocument()
 })
