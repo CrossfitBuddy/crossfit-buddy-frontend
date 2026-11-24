@@ -10,12 +10,12 @@ const equipmentId = 'aaf1b268-4315-41d4-b0a8-7d6f285d5280'
 const metricId = 'f856aa4f-7b4f-4c81-886e-e825a301a3ad'
 const propertyId = '13bc1bdd-6c55-48b3-8ac1-4a09fac569e7'
 const equipment = {
-  id: equipmentId, name: 'Гиря', imageUrl: null,
+  id: equipmentId, name: 'Гиря', imageFileId: null,
   equipmentProperties: [{ id: propertyId, name: 'Вес', metricsValueType: 'FLOAT', unit: 'кг' }],
 }
 const dto = {
   id: exerciseId, name: 'Махи гирей', description: 'Полное описание упражнения', category: 'STRENGTH',
-  imageUrl: 'https://storage.test/image.png', videoUrl: 'https://storage.test/video.mp4',
+  imageFileId: '726af039-3d6d-4c2c-a9b0-a695934ca687', videoFileId: '95c088be-b0bc-4745-97a9-cc68ba9a7fbb',
   exercisesMetrics: [{ id: metricId, name: 'Повторения', metricsValueType: 'INTEGER', unit: 'раз' }],
   exerciseEquipments: [equipment],
 }
@@ -30,7 +30,7 @@ it('отправляет совместные фильтры по контрак
   })
   expect(result).toEqual([{
     id: exerciseId, name: dto.name, description: dto.description, category: 'Силовые', equipment: 'Гиря',
-    imageUrl: dto.imageUrl, videoUrl: dto.videoUrl,
+    imageFileId: dto.imageFileId, videoFileId: dto.videoFileId,
     parameters: [{ id: metricId, name: 'Повторения', valueType: 'INTEGER', unit: 'раз' }],
     equipmentDetails: [{ id: equipmentId, name: 'Гиря', parameters: [{ id: propertyId, name: 'Вес', valueType: 'DECIMAL', unit: 'кг' }] }],
   }])
@@ -61,11 +61,11 @@ it('получает подробности отдельным запросом 
 })
 
 it('принимает упражнение без медиа, оборудования и метрик', async () => {
-  vi.mocked(api.get).mockResolvedValue({ data: { ...dto, imageUrl: null, videoUrl: null, exercisesMetrics: [], exerciseEquipments: [] } })
+  vi.mocked(api.get).mockResolvedValue({ data: { ...dto, imageFileId: null, videoFileId: null, exercisesMetrics: [], exerciseEquipments: [] } })
   const result = await catalogApi.getExercise(exerciseId, signal())
   expect(result).toMatchObject({ id: exerciseId, equipment: 'Без оборудования', parameters: [], equipmentDetails: [] })
-  expect(result.imageUrl).toBeUndefined()
-  expect(result.videoUrl).toBeUndefined()
+  expect(result.imageFileId).toBeUndefined()
+  expect(result.videoFileId).toBeUndefined()
 })
 
 it('не подменяет ошибку сервера моковым каталогом', async () => {

@@ -107,7 +107,7 @@ export function ExerciseCatalog({ api = catalogApi }: { api?: CatalogApi }) {
                 </ul>
               </section>)}
               <h3 className="mt-6 text-lg font-bold">Видеопример</h3>
-              <CatalogVideo url={opened.videoUrl} />
+              <CatalogVideo url={opened.videoUrl} fileId={opened.videoFileId} />
             </>
           )}
         </section>

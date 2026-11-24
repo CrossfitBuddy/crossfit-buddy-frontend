@@ -22,13 +22,13 @@ const parameterSchema = z.object({
   id: z.string().uuid(), name: z.string(), metricsValueType: z.enum(['INTEGER', 'FLOAT']), unit: z.string(),
 })
 const equipmentSchema = z.object({
-  id: z.string().uuid(), name: z.string(), imageUrl: z.string().nullish(),
+  id: z.string().uuid(), name: z.string(), imageFileId: z.string().uuid().nullish(),
   equipmentProperties: z.array(parameterSchema).nullish(),
 })
 const exerciseSchema = z.object({
   id: z.string().uuid(), name: z.string(), description: z.string(),
   category: z.enum(['STRENGTH', 'CARDIO', 'GYMNASTICS', 'WEIGHTLIFTING', 'OTHER']),
-  imageUrl: z.string().nullish(), videoUrl: z.string().nullish(),
+  imageFileId: z.string().uuid().nullish(), videoFileId: z.string().uuid().nullish(),
   exercisesMetrics: z.array(parameterSchema).nullish(), exerciseEquipments: z.array(equipmentSchema).nullish(),
 })
 
@@ -42,7 +42,7 @@ function exercise(value: z.infer<typeof exerciseSchema>): Exercise {
   return {
     id: value.id, name: value.name, description: value.description, category: categoryLabels[value.category],
     equipment: equipment.map(item => item.name).join(', ') || 'Без оборудования',
-    imageUrl: value.imageUrl || undefined, videoUrl: value.videoUrl || undefined,
+    imageFileId: value.imageFileId || undefined, videoFileId: value.videoFileId || undefined,
     parameters: (value.exercisesMetrics ?? []).map(parameter),
     equipmentDetails: equipment.map(item => ({
       id: item.id, name: item.name, parameters: (item.equipmentProperties ?? []).map(parameter),

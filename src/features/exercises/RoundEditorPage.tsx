@@ -19,12 +19,12 @@ export function RoundEditorPage() {
         <h2 id="confirmed-round-title" className="text-xl font-bold">Сформированный раунд</h2>
         <ol className="space-y-3" aria-label="Подтверждённые упражнения">
           {round.map((item, index) => {
-            const exercise = exercises.find((entry) => entry.id === item.exerciseId)
+            const exercise = item.exercise ?? exercises.find((entry) => entry.id === item.exerciseId)
             if (!exercise) return null
             return (
               <li key={item.key} className="rounded-2xl bg-white p-4">
                 <p className="font-bold">{index + 1}. {exercise.name}</p>
-                {exercise.parameters.map((parameter) => {
+                {exercise.parameters?.map((parameter) => {
                   const value = item.parameters[parameter.id]
                   if (value === undefined) return null
                   return <p key={parameter.id} className="text-sm text-stone-600">{parameter.name}: {value} {parameter.unit}</p>
