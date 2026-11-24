@@ -1,4 +1,4 @@
-export const formatTypes = ['EMOM', 'FOR_TIME', 'AMRAP', 'TABATA'] as const
+export const formatTypes = ['EMOM', 'FOR_TIME', 'AMRAP', 'FREE'] as const
 
 export type FormatType = typeof formatTypes[number]
 
@@ -6,8 +6,6 @@ export type ComplexFormat = {
   type: FormatType
   name: string
   description: string
-  durationRequired: boolean
-  intervalRequired: boolean
 }
 
 export type FormatsApi = {

@@ -3,14 +3,12 @@ import { api } from '../../api/http'
 import { formatTypes } from './types'
 import type { ComplexFormat, FormatsApi } from './types'
 
-const WORKOUTS_PATH = '/v1/workouts'
+const COMPLEX_PATH = '/v1/complex'
 
 const formatSchema = z.object({
   type: z.string(),
   name: z.string(),
   description: z.string(),
-  durationRequired: z.boolean(),
-  intervalRequired: z.boolean(),
 })
 
 function parseFormats(data: unknown): ComplexFormat[] {
@@ -24,11 +22,11 @@ function parseFormats(data: unknown): ComplexFormat[] {
 
 export const formatsApi: FormatsApi = {
   async getFormats(signal) {
-    const { data } = await api.get<unknown>(`${WORKOUTS_PATH}/formats`, { signal })
+    const { data } = await api.get<unknown>(`${COMPLEX_PATH}/formats`, { signal })
     return parseFormats(data)
   },
   async updateDescription(type, description) {
-    const { data } = await api.patch<unknown>(`${WORKOUTS_PATH}/${type}`, { description })
+    const { data } = await api.patch<unknown>(`${COMPLEX_PATH}/${type}`, { description })
     const result = formatSchema.extend({ type: z.literal(type) }).safeParse(data)
     if (!result.success) throw new Error('Сервер вернул некорректный формат')
     return result.data

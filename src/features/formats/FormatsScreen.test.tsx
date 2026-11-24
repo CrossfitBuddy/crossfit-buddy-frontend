@@ -6,10 +6,10 @@ import { FormatsScreen } from './FormatsScreen'
 import type { ComplexFormat, FormatType, FormatsApi } from './types'
 
 const initial: ComplexFormat[] = [
-  { type: 'EMOM', name: 'Every Minute on the Minute', description: 'Выполняй задание каждую минуту', durationRequired: true, intervalRequired: true },
-  { type: 'FOR_TIME', name: 'For Time', description: 'Выполни раунды как можно быстрее', durationRequired: true, intervalRequired: false },
-  { type: 'AMRAP', name: 'As Many Rounds As Possible', description: 'Максимум раундов за время', durationRequired: true, intervalRequired: false },
-  { type: 'TABATA', name: 'Tabata', description: 'Работа и отдых по кругу', durationRequired: true, intervalRequired: true },
+  { type: 'EMOM', name: 'Every Minute on the Minute', description: 'Выполняй задание каждую минуту' },
+  { type: 'FOR_TIME', name: 'For Time', description: 'Выполни раунды как можно быстрее' },
+  { type: 'AMRAP', name: 'As Many Rounds As Possible', description: 'Максимум раундов за время' },
+  { type: 'FREE', name: 'Free Format', description: 'Свободный формат без жёстких правил' },
 ]
 
 function createApi(overrides: Partial<FormatsApi> = {}) {
@@ -64,7 +64,7 @@ describe('Экран форматов комплекса', () => {
     expect(getFormats).toHaveBeenCalledTimes(2)
   })
 
-  it('даёт менять только описание и показывает обязательность длительности и интервала', async () => {
+  it('даёт менять только описание без полей длительности и интервала', async () => {
     const user = userEvent.setup()
     renderScreen(createApi())
 
@@ -73,18 +73,10 @@ describe('Экран форматов комплекса', () => {
     expect(screen.getByRole('textbox', { name: 'Описание' })).toBeEnabled()
     expect(screen.getAllByRole('textbox')).toHaveLength(1)
     expect(screen.queryByRole('spinbutton')).not.toBeInTheDocument()
-    expect(screen.getByText('Обязательна')).toBeInTheDocument()
-    expect(screen.getByText('Обязателен')).toBeInTheDocument()
+    expect(screen.queryByText('Длительность')).not.toBeInTheDocument()
+    expect(screen.queryByText('Интервал')).not.toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: 'Описание' })).toHaveAttribute('maxlength', '2000')
     expect(screen.queryByRole('button', { name: /Удалить/ })).not.toBeInTheDocument()
-  })
-
-  it('показывает, что интервал необязателен для For Time', async () => {
-    const user = userEvent.setup()
-    renderScreen(createApi())
-
-    await user.click(await screen.findByRole('button', { name: 'Редактировать For Time' }))
-
-    expect(screen.getByText('Необязателен')).toBeInTheDocument()
   })
 
   it('сохраняет новое описание и показывает значение из ответа сервера', async () => {
@@ -148,7 +140,7 @@ describe('Экран форматов комплекса', () => {
     const user = userEvent.setup()
     renderScreen(api)
 
-    await user.click(await screen.findByRole('button', { name: 'Редактировать Tabata' }))
+    await user.click(await screen.findByRole('button', { name: 'Редактировать Free Format' }))
     await user.clear(screen.getByRole('textbox', { name: 'Описание' }))
     await user.type(screen.getByRole('textbox', { name: 'Описание' }), '   ')
     await user.click(screen.getByRole('button', { name: 'Сохранить' }))

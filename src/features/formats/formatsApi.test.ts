@@ -6,8 +6,6 @@ const emom = {
   type: 'EMOM',
   name: 'Every Minute on the Minute',
   description: 'Выполняй задание каждую минуту',
-  durationRequired: true,
-  intervalRequired: true,
 }
 
 afterEach(() => vi.restoreAllMocks())
@@ -15,19 +13,18 @@ afterEach(() => vi.restoreAllMocks())
 describe('API форматов комплекса', () => {
   it('загружает четыре формата в фиксированном порядке', async () => {
     const get = vi.spyOn(api, 'get').mockResolvedValue({ data: [
-      { ...emom, type: 'TABATA', name: 'Tabata' },
-      { ...emom, type: 'AMRAP', name: 'As Many Rounds As Possible', intervalRequired: false },
+      { ...emom, type: 'FREE', name: 'Free Format' },
+      { ...emom, type: 'AMRAP', name: 'As Many Rounds As Possible' },
       emom,
-      { ...emom, type: 'FOR_TIME', name: 'For Time', intervalRequired: false },
+      { ...emom, type: 'FOR_TIME', name: 'For Time' },
     ] })
     const { signal } = new AbortController()
 
     const formats = await formatsApi.getFormats(signal)
 
-    expect(get).toHaveBeenCalledWith('/v1/workouts/formats', { signal })
-    expect(formats.map((format) => format.type)).toEqual(['EMOM', 'FOR_TIME', 'AMRAP', 'TABATA'])
+    expect(get).toHaveBeenCalledWith('/v1/complex/formats', { signal })
+    expect(formats.map((format) => format.type)).toEqual(['EMOM', 'FOR_TIME', 'AMRAP', 'FREE'])
     expect(formats[0]).toEqual(emom)
-    expect(formats[1].intervalRequired).toBe(false)
   })
 
   it('игнорирует неизвестные форматы', async () => {
@@ -37,7 +34,7 @@ describe('API форматов комплекса', () => {
   })
 
   it('отклоняет ответ неверной формы', async () => {
-    vi.spyOn(api, 'get').mockResolvedValue({ data: [{ ...emom, durationRequired: 600 }] })
+    vi.spyOn(api, 'get').mockResolvedValue({ data: [{ ...emom, description: 600 }] })
 
     await expect(formatsApi.getFormats()).rejects.toThrow('Сервер вернул некорректный список форматов')
   })
@@ -47,6 +44,6 @@ describe('API форматов комплекса', () => {
     const patch = vi.spyOn(api, 'patch').mockResolvedValue({ data: updated })
 
     await expect(formatsApi.updateDescription('EMOM', 'Новое описание')).resolves.toEqual(updated)
-    expect(patch).toHaveBeenCalledWith('/v1/workouts/EMOM', { description: 'Новое описание' })
+    expect(patch).toHaveBeenCalledWith('/v1/complex/EMOM', { description: 'Новое описание' })
   })
 })
