@@ -75,7 +75,7 @@ it('передаёт UUID из списка в запрос подробной �
   get.mockResolvedValueOnce({ data: { items: [workout], page: 0, totalPages: 1 } })
     .mockResolvedValueOnce({ data: {
       id: workout.id, title: workout.title, durationSec: 900,
-      stages: [{ id: 'stage', format: 'Основной блок', complexFormat: 'For Time', rounds: [] }],
+      complexes: [{ id: 'stage', workoutStage: 'Основной блок', complexFormat: 'For Time', rounds: [] }],
     } })
 
   const user = userEvent.setup()

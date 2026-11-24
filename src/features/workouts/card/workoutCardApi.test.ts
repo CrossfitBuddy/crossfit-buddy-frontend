@@ -11,10 +11,10 @@ describe('parseWorkout', () => {
       durationSec: 900,
       type: 'OWN',
       status: 'READY',
-      stages: [{
+      complexes: [{
         id: 's1',
-        format: 'Основной блок',
-        complexFormat: 'For Time',
+        workoutStage: 'Основной блок',
+        complexFormat: 'FOR_TIME',
         timeLimitSeconds: 900,
         rounds: [
           { id: 'r2', position: 2, repeatCount: 3, exercises: [{ ...exercise, position: 2, weightKg: 12.5 }, exercise] },
@@ -25,7 +25,7 @@ describe('parseWorkout', () => {
     })
 
     expect(workout.durationSeconds).toBe(900)
-    expect(workout.stages[0]).toMatchObject({ format: 'Основной блок', complexFormat: 'For Time' })
+    expect(workout.stages[0]).toMatchObject({ format: 'Основной блок', complexFormat: 'FOR_TIME' })
     expect(workout.stages[0].rounds.map((round) => round.position)).toEqual([1, 2])
     expect(workout.stages[0].rounds[0].repeatCount).toBe(1)
     expect(workout.stages[0].rounds[1].exercises[0]).toMatchObject({ name: 'Приседания', repetitions: 10, weightKg: null })
@@ -35,13 +35,14 @@ describe('parseWorkout', () => {
   })
 
   it('необязательные поля и материалы по умолчанию пустые', () => {
-    const workout = parseWorkout({ id: 'w1', title: null })
+    const workout = parseWorkout({ id: 'w1', title: null, complexes: [] })
 
     expect(workout).toMatchObject({ title: 'Тренировка без названия', description: null, durationSeconds: null, stages: [], materials: [] })
   })
 
   it('отклоняет ответ неверной формы', () => {
     expect(() => parseWorkout({ title: 'Без id' })).toThrow('Сервер вернул некорректную карточку тренировки')
-    expect(() => parseWorkout({ id: 'w1', title: 'Т', stages: [{ id: 's1', format: { name: 'AMRAP' } }] })).toThrow()
+    expect(() => parseWorkout({ id: 'w1', title: 'Т', stages: [] })).toThrow()
+    expect(() => parseWorkout({ id: 'w1', title: 'Т', complexes: [{ id: 's1', workoutStage: { name: 'AMRAP' } }] })).toThrow()
   })
 })

@@ -1,6 +1,13 @@
 import { exerciseParams, formatDuration, isSafeUrl, stageParams } from './workoutCardFormat'
 import type { WorkoutDetails } from './types'
 
+const formatNames: Record<string, string> = {
+  EMOM: 'EMOM',
+  FOR_TIME: 'For Time',
+  AMRAP: 'AMRAP',
+  FREE: 'Free Format',
+}
+
 function materialLabel(type: string) {
   switch (type) {
     case 'VIDEO': return 'Видео'
@@ -11,7 +18,7 @@ function materialLabel(type: string) {
 }
 
 export function WorkoutCard({ workout }: { workout: WorkoutDetails }) {
-  const formats = [...new Set(workout.stages.map((stage) => stage.complexFormat))]
+  const formats = [...new Set(workout.stages.map((stage) => formatNames[stage.complexFormat] ?? stage.complexFormat))]
 
   return (
     <article className="space-y-6">
@@ -40,7 +47,7 @@ export function WorkoutCard({ workout }: { workout: WorkoutDetails }) {
         return (
           <section key={stage.id} aria-label={stage.format} className="rounded-2xl bg-white p-4">
             <h3 className="text-lg font-black">{stage.format}</h3>
-            <p className="text-sm text-stone-500">{[stage.complexFormat, ...params].join(' · ')}</p>
+            <p className="text-sm text-stone-500">{[formatNames[stage.complexFormat] ?? stage.complexFormat, ...params].join(' · ')}</p>
             <div className="mt-4 space-y-4">
               {stage.rounds.map((round) => (
                 <div key={round.id}>

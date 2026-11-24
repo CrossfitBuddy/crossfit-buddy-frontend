@@ -25,9 +25,9 @@ const roundSchema = z.object({
   exercises: z.array(exerciseSchema).default([]),
 })
 
-const stageSchema = z.object({
+const complexSchema = z.object({
   id: z.string(),
-  format: z.string(),
+  workoutStage: z.string(),
   complexFormat: z.string(),
   timeLimitSeconds: optionalNumber,
   targetRounds: optionalNumber,
@@ -46,20 +46,21 @@ const workoutSchema = z.object({
   title: optionalText,
   description: optionalText,
   durationSec: optionalNumber,
-  stages: z.array(stageSchema).default([]),
+  complexes: z.array(complexSchema),
   materials: z.array(materialSchema).nullish().transform((materials) => materials ?? []),
 })
 
 export function parseWorkout(data: unknown): WorkoutDetails {
   const result = workoutSchema.safeParse(data)
   if (!result.success) throw new Error('Сервер вернул некорректную карточку тренировки')
-  const { durationSec, stages, ...workout } = result.data
+  const { durationSec, complexes, ...workout } = result.data
   return {
     ...workout,
     title: workout.title?.trim() || 'Тренировка без названия',
     durationSeconds: durationSec,
-    stages: stages.map(({ rounds, ...stage }) => ({
-      ...stage,
+    stages: complexes.map(({ workoutStage, rounds, ...complex }) => ({
+      ...complex,
+      format: workoutStage,
       rounds: rounds.map((round) => ({
         ...round,
         exercises: [...round.exercises].sort((left, right) => left.position - right.position),
