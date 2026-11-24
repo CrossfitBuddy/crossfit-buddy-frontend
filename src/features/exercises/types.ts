@@ -20,6 +20,7 @@ export type Exercise = {
   category: string
   name: string
   description: string
+  video?: UploadFile[]
   media: UploadFile[]
   metrics: Measure[]
   equipment: Equipment[]
