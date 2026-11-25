@@ -16,7 +16,7 @@ const equipment = {
 const dto = {
   id: exerciseId, name: 'Махи гирей', description: 'Полное описание упражнения', category: 'STRENGTH',
   imageFileId: '726af039-3d6d-4c2c-a9b0-a695934ca687', videoFileId: '95c088be-b0bc-4745-97a9-cc68ba9a7fbb',
-  exercisesMetrics: [{ id: metricId, name: 'Повторения', metricsValueType: 'INTEGER', unit: 'раз' }],
+  exercisesMetrics: [{ id: metricId, name: 'Повторения', metricCode: 'repetitions', metricsValueType: 'INTEGER', unit: 'раз' }],
   exerciseEquipments: [equipment],
 }
 const signal = () => new AbortController().signal
@@ -31,7 +31,7 @@ it('отправляет совместные фильтры по контрак
   expect(result).toEqual([{
     id: exerciseId, name: dto.name, description: dto.description, category: 'Силовые', equipment: 'Гиря',
     imageFileId: dto.imageFileId, videoFileId: dto.videoFileId,
-    parameters: [{ id: metricId, name: 'Повторения', valueType: 'INTEGER', unit: 'раз' }],
+    parameters: [{ id: metricId, name: 'Повторения', metricCode: 'repetitions', valueType: 'INTEGER', unit: 'раз' }],
     equipmentDetails: [{ id: equipmentId, name: 'Гиря', parameters: [{ id: propertyId, name: 'Вес', valueType: 'DECIMAL', unit: 'кг' }] }],
   }])
 })

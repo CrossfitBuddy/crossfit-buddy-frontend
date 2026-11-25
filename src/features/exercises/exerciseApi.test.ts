@@ -42,3 +42,11 @@ it('отправляет маркеры пустых списков без пу�
   expect(body.has('exercisesMetrics')).toBe(false)
   expect(body.has('exercisesEquipments')).toBe(false)
 })
+
+it('сохраняет код метрики при получении и повторном сохранении упражнения', async () => {
+  vi.mocked(api.get).mockResolvedValue({ data: [{ id: 'exercise', name: 'Берпи', description: 'Полное описание', category: 'CARDIO',
+    exercisesMetrics: [{ id: 'metric', name: 'Повторения', metricsValueType: 'INTEGER', unit: 'раз', metricCode: 'repetitions' }], exerciseEquipments: [] }] })
+  const value = await exerciseApi.getExercise('exercise')
+  await exerciseApi.saveExercise(value, 'exercise')
+  expect((vi.mocked(api.put).mock.calls[0][1] as FormData).get('exercisesMetrics[0].metricCode')).toBe('repetitions')
+})

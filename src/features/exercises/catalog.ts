@@ -1,6 +1,6 @@
 import type { Measure } from './types'
 
-export type ExerciseParameter = Measure & { id: string; min?: number; max?: number; precision?: number }
+export type ExerciseParameter = Measure & { id: string; metricCode?: string; min?: number; max?: number; precision?: number }
 
 export type CatalogParameter = ExerciseParameter
 export type CatalogEquipment = { id: string; name: string; parameters: CatalogParameter[] }

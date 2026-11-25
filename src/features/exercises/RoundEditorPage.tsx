@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { exercises } from './catalog'
 import { RoundForm } from './RoundForm'
 import type { RoundExercise } from './selection'
+import { metricParameterValue } from './metricParameters'
 
 export function RoundEditorPage() {
   const [round, setRound] = useState<RoundExercise[] | null>(null)
@@ -25,7 +26,7 @@ export function RoundEditorPage() {
               <li key={item.key} className="rounded-2xl bg-white p-4">
                 <p className="font-bold">{index + 1}. {exercise.name}</p>
                 {exercise.parameters?.map((parameter) => {
-                  const value = item.parameters[parameter.id]
+                  const value = metricParameterValue(item, parameter)
                   if (value === undefined) return null
                   return <p key={parameter.id} className="text-sm text-stone-600">{parameter.name}: {value} {parameter.unit}</p>
                 })}

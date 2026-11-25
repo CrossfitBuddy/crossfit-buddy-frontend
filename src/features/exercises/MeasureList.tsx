@@ -26,6 +26,7 @@ export function MeasureList({ form, name, path, nameLabel, duplicateMessage, add
     if (!suggestion) return
     form.setFieldValue([...path, index, 'valueType'], suggestion.valueType)
     form.setFieldValue([...path, index, 'unit'], suggestion.unit)
+    form.setFieldValue([...path, index, 'metricCode'], suggestion.metricCode)
   }
 
   const revalidateNames = () => {

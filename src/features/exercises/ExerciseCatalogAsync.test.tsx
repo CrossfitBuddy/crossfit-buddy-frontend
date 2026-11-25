@@ -13,7 +13,7 @@ import { getSelection, resetSelection } from './selection'
 const squat: Exercise = {
   id: '60fdbba6-0f4a-4dda-9332-f10a5e35ea55', name: 'Приседания из каталога',
   category: 'Силовые', equipment: 'Гантели', description: 'Описание из списка',
-  parameters: [{ id: '919022a0-ff7c-4136-b881-fa08706df7b5', name: 'Повторения', valueType: 'INTEGER', unit: 'раз' }],
+  parameters: [{ id: '919022a0-ff7c-4136-b881-fa08706df7b5', metricCode: 'repetitions', name: 'Повторения', valueType: 'INTEGER', unit: 'раз' }],
   equipmentDetails: [{ id: 'f554e542-b725-488d-8f8d-11c12ed713ed', name: 'Гантели', parameters: [
     { id: 'e87f695c-070a-4b1a-ba55-a54d2ec9f4f9', name: 'Вес', valueType: 'DECIMAL', unit: 'кг' },
   ] }],
@@ -182,10 +182,28 @@ it('настраивает повторные серверные упражне�
     await user.type(settings.getByRole('spinbutton', { name: 'Повторения, раз' }), value)
     await user.click(settings.getByRole('button', { name: 'Закрыть' }))
   }
-  expect(getSelection().round.map(item => item.parameters[squat.parameters![0].id])).toEqual([8, 12])
+  expect(getSelection().round.map(item => item.parameters.repetitions)).toEqual([8, 12])
   await user.click(screen.getByRole('button', { name: 'Удалить 1 Приседания из каталога' }))
   await user.click(screen.getByRole('button', { name: 'Готово' }))
   expect(screen.getByRole('list', { name: 'Подтверждённые упражнения' })).toHaveTextContent('Приседания из каталога')
   expect(screen.getByText('Повторения: 12 раз')).toBeInTheDocument()
   expect(screen.queryByText('Повторения: 8 раз')).not.toBeInTheDocument()
+})
+
+it('не подтверждает введённое значение метрики без поддержанного кода и позволяет его исправить', async () => {
+  const api = createApi()
+  vi.mocked(api.search).mockResolvedValue([{ ...squat, parameters: [{ ...squat.parameters![0], metricCode: 'custom' }] }])
+  const user = setup(api)
+  await user.click(await screen.findByRole('button', { name: 'Выбрать Приседания из каталога' }))
+  await user.click(screen.getByRole('button', { name: 'Готово' }))
+  await user.click(screen.getByRole('button', { name: 'Настроить 1 Приседания из каталога' }))
+  await user.type(screen.getByRole('spinbutton', { name: 'Повторения, раз' }), '8')
+  expect(screen.getByText('Сохранение этого параметра пока недоступно.')).toBeInTheDocument()
+  await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Закрыть' }))
+  expect(screen.getByRole('button', { name: 'Готово' })).toBeDisabled()
+  await user.click(screen.getByRole('button', { name: 'Настроить 1 Приседания из каталога' }))
+  expect(screen.getByRole('spinbutton')).toHaveDisplayValue('8')
+  await user.clear(screen.getByRole('spinbutton'))
+  await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Закрыть' }))
+  expect(screen.getByRole('button', { name: 'Готово' })).toBeEnabled()
 })
