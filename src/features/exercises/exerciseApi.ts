@@ -5,7 +5,7 @@ import type { Equipment, Exercise, ExerciseApi, Measure } from './types'
 
 const root = '/v1/general-exercises'
 
-type MeasureDto = { id: string; name: string; metricsValueType: 'INTEGER' | 'FLOAT'; unit: string }
+type MeasureDto = { id: string; name: string; metricCode?: string | null; metricsValueType: 'INTEGER' | 'FLOAT'; unit: string }
 type EquipmentDto = { id: string; name: string; imageFileId?: string; equipmentProperties: MeasureDto[] }
 type ExerciseDto = {
   imageFileId?: string
@@ -20,6 +20,7 @@ type ExerciseDto = {
 
 const measure = (dto: MeasureDto): Measure => ({
   id: dto.id, name: dto.name, unit: dto.unit, valueType: dto.metricsValueType === 'FLOAT' ? 'DECIMAL' : 'INTEGER',
+  ...(dto.metricCode ? { metricCode: dto.metricCode } : {}),
 })
 
 const equipment = (dto: EquipmentDto): Equipment => ({
@@ -54,6 +55,7 @@ function createRequest(value: Exercise) {
   value.metrics.forEach((item, index) => {
     const prefix = 'exercisesMetrics[' + index + ']'
     if (item.id) data.set(prefix + '.id', item.id)
+    if (item.metricCode) data.set(prefix + '.metricCode', item.metricCode)
     addMeasure(prefix, item)
   })
   value.equipment.forEach((item, index) => {

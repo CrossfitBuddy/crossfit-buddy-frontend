@@ -4,6 +4,7 @@ export type ValueType = 'INTEGER' | 'DECIMAL'
 
 export type Measure = {
   id?: string
+  metricCode?: string
   name: string
   valueType: ValueType
   unit: string

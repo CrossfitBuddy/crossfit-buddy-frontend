@@ -21,9 +21,10 @@ const toExercise = (values: Exercise, catalog: ExerciseCatalog): Exercise => ({
   description: values.description.trim(),
   video: values.video ?? [],
   media: values.media ?? [],
-  metrics: trimMeasures(values.metrics).map(item => ({
-    ...item, id: catalog.metrics.find(m => m.name === item.name && m.unit === item.unit && m.valueType === item.valueType)?.id,
-  })),
+  metrics: trimMeasures(values.metrics).map(item => {
+    const existing = catalog.metrics.find(m => m.name === item.name && m.unit === item.unit && m.valueType === item.valueType)
+    return { ...item, id: existing?.id, metricCode: existing?.metricCode ?? item.metricCode }
+  }),
   equipment: (values.equipment ?? []).map((item) => ({
     id: catalog.equipment.find(e => e.name === item.name.trim() && e.properties.length === (item.properties ?? []).length &&
       e.properties.every((p, i) => p.name === item.properties[i].name && p.unit === item.properties[i].unit && p.valueType === item.properties[i].valueType))?.id,

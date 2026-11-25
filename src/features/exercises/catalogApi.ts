@@ -20,6 +20,7 @@ const categoryLabels = {
 
 const parameterSchema = z.object({
   id: z.string().uuid(), name: z.string(), metricsValueType: z.enum(['INTEGER', 'FLOAT']), unit: z.string(),
+  metricCode: z.string().nullish(),
 })
 const equipmentSchema = z.object({
   id: z.string().uuid(), name: z.string(), imageFileId: z.string().uuid().nullish(),
@@ -34,6 +35,7 @@ const exerciseSchema = z.object({
 
 const parameter = (value: z.infer<typeof parameterSchema>) => ({
   id: value.id, name: value.name, unit: value.unit,
+  ...(value.metricCode ? { metricCode: value.metricCode } : {}),
   valueType: value.metricsValueType === 'FLOAT' ? 'DECIMAL' as const : 'INTEGER' as const,
 })
 
