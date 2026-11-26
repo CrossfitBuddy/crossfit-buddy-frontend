@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, it, vi } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
@@ -20,7 +20,7 @@ const workout = {
 }
 
 function renderWorkouts(path = '/workouts') {
-  render(
+  return render(
     <QueryClientProvider client={new QueryClient()}>
       <MemoryRouter initialEntries={[path]}>
         <Routes>
@@ -60,7 +60,7 @@ it('отправляет поиск и фильтры вместе и сбрас
   })
 })
 
-it('убирает карточки при отказе в доступе и сохраняет безопасный прямой переход', async () => {
+it('убирает карточки при отказе в доступе к списку', async () => {
   get.mockResolvedValueOnce({ data: { items: [workout], page: 0, totalPages: 1 } })
     .mockRejectedValueOnce({ isAxiosError: true, response: { status: 403 } })
   const user = userEvent.setup()
@@ -69,8 +69,38 @@ it('убирает карточки при отказе в доступе и с�
   await user.selectOptions(screen.getByLabelText('Статус'), 'CANCELLED')
   expect(await screen.findByRole('alert')).toHaveTextContent('У вас нет доступа к списку тренировок.')
   expect(screen.queryByRole('heading', { name: 'Fran' })).not.toBeInTheDocument()
+})
 
-  renderWorkouts('/workouts/' + workout.id)
-  expect(screen.getByText('Подробная карточка пока недоступна.')).toBeInTheDocument()
-  await waitFor(() => expect(get).toHaveBeenCalledTimes(2))
+it('передаёт UUID из списка в запрос подробной карточки', async () => {
+  get.mockResolvedValueOnce({ data: { items: [workout], page: 0, totalPages: 1 } })
+    .mockResolvedValueOnce({ data: {
+      id: workout.id, title: workout.title, durationSec: 900,
+      complexes: [{ id: 'stage', workoutStage: 'Основной блок', complexFormat: 'For Time', rounds: [] }],
+    } })
+
+  const user = userEvent.setup()
+  renderWorkouts()
+  await user.click(await screen.findByRole('link', { name: /Fran/ }))
+
+  expect(await screen.findByRole('heading', { name: 'Основной блок' })).toBeInTheDocument()
+  expect(screen.getByText('15 мин')).toBeInTheDocument()
+  expect(get).toHaveBeenLastCalledWith(`/v1/workouts/${workout.id}`, { signal: expect.any(AbortSignal) })
+})
+
+it('позволяет открыть карточку напрямую после отказа в доступе к списку', async () => {
+  get.mockRejectedValueOnce({ isAxiosError: true, response: { status: 403 } })
+    .mockResolvedValueOnce({ data: {
+      id: workout.id, title: workout.title, durationSec: 900,
+      complexes: [{ id: 'stage', workoutStage: 'WOD', complexFormat: 'FOR_TIME', rounds: [] }],
+    } })
+
+  const list = renderWorkouts()
+  expect(await screen.findByRole('alert')).toHaveTextContent('У вас нет доступа к списку тренировок.')
+  list.unmount()
+  renderWorkouts(`/workouts/${workout.id}`)
+
+  expect(await screen.findByRole('heading', { name: 'WOD' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Fran' })).toBeInTheDocument()
+  expect(get).toHaveBeenCalledTimes(2)
+  expect(get).toHaveBeenLastCalledWith(`/v1/workouts/${workout.id}`, { signal: expect.any(AbortSignal) })
 })
