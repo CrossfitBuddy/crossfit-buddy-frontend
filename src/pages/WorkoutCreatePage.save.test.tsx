@@ -29,9 +29,8 @@ it('блокирует повторную отправку на время за�
   patchWorkoutDraft({ datetime: new Date().toISOString() })
   patchWorkoutStage(WOD_STAGE_INDEX, {
     format: 'AMRAP',
-    stageFormatId: amrap.stageFormatId,
     params: defaultParamsForCatalogItem(amrap),
-    round: [{ key: '1', exerciseId: 'burpee' }],
+    round: [{ key: '1', exerciseId: 'burpee', parameters: {} }],
   })
 
   const user = userEvent.setup()
@@ -62,9 +61,8 @@ it('рисует ошибки полей и не очищает форму', asy
   patchWorkoutDraft({ datetime: new Date().toISOString(), name: 'Мой черновик' })
   patchWorkoutStage(WOD_STAGE_INDEX, {
     format: 'AMRAP',
-    stageFormatId: amrap.stageFormatId,
     params: defaultParamsForCatalogItem(amrap),
-    round: [{ key: '1', exerciseId: 'burpee' }],
+    round: [{ key: '1', exerciseId: 'burpee', parameters: {} }],
   })
 
   const user = userEvent.setup()

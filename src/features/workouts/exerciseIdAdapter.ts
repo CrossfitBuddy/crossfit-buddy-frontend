@@ -1,4 +1,7 @@
-/** До API каталога: стабильные UUID для моковых id из `catalog.ts` (адаптер CB-18981). */
+/** До merge #19217: UUID из каталога как есть, иначе мок из `catalog.ts`. */
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 const MOCK_EXERCISE_UUID: Record<string, string> = {
   burpee: '11111111-1111-4111-8111-111111111101',
@@ -17,4 +20,7 @@ const MOCK_EXERCISE_UUID: Record<string, string> = {
   thruster: '11111111-1111-4111-8111-111111111114',
 }
 
-export const catalogExerciseIdToUuid = (exerciseId: string): string | null => MOCK_EXERCISE_UUID[exerciseId] ?? null
+export const catalogExerciseIdToUuid = (exerciseId: string): string | null => {
+  if (UUID_RE.test(exerciseId)) return exerciseId
+  return MOCK_EXERCISE_UUID[exerciseId] ?? null
+}
