@@ -8,7 +8,7 @@ import { RoundEditorPage } from './RoundEditorPage'
 import { filterExercises, type Exercise } from './catalog'
 import type { CatalogApi, CatalogFilters } from './catalogApi'
 import { updateCatalogSearch } from './catalogSearch'
-import { getSelection, resetSelection } from './selection'
+import { getSelection, resetSelection, updateRoundParameter } from './selection'
 
 const squat: Exercise = {
   id: '60fdbba6-0f4a-4dda-9332-f10a5e35ea55', name: 'Приседания из каталога',
@@ -190,20 +190,32 @@ it('настраивает повторные серверные упражне�
   expect(screen.queryByText('Повторения: 8 раз')).not.toBeInTheDocument()
 })
 
-it('не подтверждает введённое значение метрики без поддержанного кода и позволяет его исправить', async () => {
+it.each([undefined, 'custom'])('не предлагает вводить параметр без поддержанного кода %s', async metricCode => {
   const api = createApi()
-  vi.mocked(api.search).mockResolvedValue([{ ...squat, parameters: [{ ...squat.parameters![0], metricCode: 'custom' }] }])
+  vi.mocked(api.search).mockResolvedValue([{ ...squat, parameters: [{ ...squat.parameters![0], metricCode }] }])
   const user = setup(api)
   await user.click(await screen.findByRole('button', { name: 'Выбрать Приседания из каталога' }))
   await user.click(screen.getByRole('button', { name: 'Готово' }))
   await user.click(screen.getByRole('button', { name: 'Настроить 1 Приседания из каталога' }))
-  await user.type(screen.getByRole('spinbutton', { name: 'Повторения, раз' }), '8')
-  expect(screen.getByText('Сохранение этого параметра пока недоступно.')).toBeInTheDocument()
+  const input = screen.getByRole('spinbutton', { name: 'Повторения, раз' })
+  expect(input).toBeDisabled()
+  expect(input).toHaveAccessibleDescription('Этот параметр пока недоступен для настройки.')
+  expect(screen.queryByText('Сохранение этого параметра пока недоступно.')).not.toBeInTheDocument()
   await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Закрыть' }))
-  expect(screen.getByRole('button', { name: 'Готово' })).toBeDisabled()
+  expect(screen.getByRole('button', { name: 'Готово' })).toBeEnabled()
+})
+
+it('даёт очистить прежнее значение неподдержанного параметра и подтвердить раунд', async () => {
+  const api = createApi()
+  vi.mocked(api.search).mockResolvedValue([{ ...squat, parameters: [{ ...squat.parameters![0], metricCode: undefined }] }])
+  const user = setup(api)
+  await user.click(await screen.findByRole('button', { name: 'Выбрать Приседания из каталога' }))
+  await user.click(screen.getByRole('button', { name: 'Готово' }))
+  act(() => updateRoundParameter(getSelection().round[0].key, squat.parameters![0].id, 8))
   await user.click(screen.getByRole('button', { name: 'Настроить 1 Приседания из каталога' }))
+  expect(screen.getByRole('spinbutton')).toBeDisabled()
   expect(screen.getByRole('spinbutton')).toHaveDisplayValue('8')
-  await user.clear(screen.getByRole('spinbutton'))
+  await user.click(screen.getByRole('button', { name: 'Очистить значение' }))
   await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Закрыть' }))
   expect(screen.getByRole('button', { name: 'Готово' })).toBeEnabled()
 })

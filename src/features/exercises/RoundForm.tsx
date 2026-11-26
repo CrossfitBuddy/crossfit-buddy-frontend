@@ -2,7 +2,7 @@ import { Button, InputNumber, Modal } from 'antd'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { exercises } from './catalog'
-import { metricParameterError, metricParameterKey, metricParameterValue, roundMetricValues } from './metricParameters'
+import { metricField, metricParameterError, metricParameterKey, metricParameterValue, roundMetricValues } from './metricParameters'
 import { Illustration } from './Illustration'
 import { removeRoundExercise, resetSelection, updateRoundParameter, useSelection, type RoundExercise } from './selection'
 
@@ -84,6 +84,7 @@ export function RoundForm({ onConfirm }: RoundFormProps) {
             {!editing.exercise.parameters?.length && <p>Для этого упражнения нет параметров.</p>}
             {editing.exercise.parameters?.map((parameter) => {
               const error = metricParameterError(editing, parameter)
+              const unavailable = !metricField(parameter)
               const fieldId = `round-${editing.key}-${parameter.id}`
               return (
                 <div key={parameter.id} className="space-y-1">
@@ -94,16 +95,21 @@ export function RoundForm({ onConfirm }: RoundFormProps) {
                     id={fieldId}
                     className="!w-full"
                     value={metricParameterValue(editing, parameter) ?? null}
+                    disabled={unavailable}
                     controls={false}
                     changeOnBlur={false}
                     decimalSeparator=","
                     step={parameter.valueType === 'INTEGER' ? 1 : 0.1}
                     status={error ? 'error' : undefined}
                     aria-invalid={Boolean(error)}
-                    aria-describedby={error ? `${fieldId}-error` : undefined}
+                    aria-describedby={error ? `${fieldId}-error` : unavailable ? `${fieldId}-hint` : undefined}
                     onChange={(value) => updateRoundParameter(editing.key, metricParameterKey(parameter), value)}
                   />
                   {error && <p id={`${fieldId}-error`} className="text-sm text-red-700">{error}</p>}
+                  {unavailable && <p id={`${fieldId}-hint`} className="text-sm text-stone-500">Этот параметр пока недоступен для настройки.</p>}
+                  {unavailable && metricParameterValue(editing, parameter) !== undefined && (
+                    <Button onClick={() => updateRoundParameter(editing.key, metricParameterKey(parameter), null)}>Очистить значение</Button>
+                  )}
                 </div>
               )
             })}
