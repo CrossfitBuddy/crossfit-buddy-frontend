@@ -1,9 +1,19 @@
 import { isAxiosError } from 'axios'
+import { z } from 'zod'
 import { mediaId, storedMedia } from './mediaApi'
 import { api } from '../../api/http'
 import type { Equipment, Exercise, ExerciseApi, Measure } from './types'
 
 const root = '/v1/general-exercises'
+
+const exerciseListItemSchema = z.object({ id: z.string().uuid(), name: z.string(), description: z.string() })
+
+export async function getExerciseList(signal?: AbortSignal) {
+  const { data } = await api.get<unknown>(root + '/get/all-exercises', { signal })
+  const result = z.array(exerciseListItemSchema).safeParse(data)
+  if (!result.success) throw new Error('Сервер вернул некорректный список упражнений')
+  return result.data
+}
 
 type MeasureDto = { id: string; name: string; metricCode?: string | null; metricsValueType: 'INTEGER' | 'FLOAT'; unit: string }
 type EquipmentDto = { id: string; name: string; imageFileId?: string; equipmentProperties: MeasureDto[] }

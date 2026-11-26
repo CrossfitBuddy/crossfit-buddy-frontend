@@ -1,10 +1,23 @@
 import { beforeEach, expect, it, vi } from 'vitest'
 import { api } from '../../api/http'
-import { exerciseApi } from './exerciseApi'
+import { exerciseApi, getExerciseList } from './exerciseApi'
 import { demoExercise } from './mockExerciseApi'
 
 vi.mock('../../api/http', () => ({ api: { get: vi.fn(), post: vi.fn(), put: vi.fn() } }))
 beforeEach(() => vi.resetAllMocks())
+
+it('получает список с серверными ID и передаёт сигнал отмены', async () => {
+  const item = { id: '60fdbba6-0f4a-4dda-9332-f10a5e35ea55', name: 'Берпи', description: 'Полное описание' }
+  vi.mocked(api.get).mockResolvedValue({ data: [item] })
+  const signal = new AbortController().signal
+  await expect(getExerciseList(signal)).resolves.toEqual([item])
+  expect(api.get).toHaveBeenCalledWith('/v1/general-exercises/get/all-exercises', { signal })
+})
+
+it('отклоняет некорректный список без серверного ID', async () => {
+  vi.mocked(api.get).mockResolvedValue({ data: [{ name: 'Берпи', description: 'Полное описание' }] })
+  await expect(getExerciseList()).rejects.toThrow('некорректный список')
+})
 
 it('отправляет только оставшиеся строки формы с именами и типами полей бэкенда', async () => {
   await exerciseApi.saveExercise({ ...demoExercise,
