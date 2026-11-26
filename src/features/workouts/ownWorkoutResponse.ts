@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { SelectedExercise } from '../exercises/selection'
+import type { RoundExercise } from '../exercises/selection'
 import { catalogUuidToExerciseId } from './exerciseIdAdapter'
 import { unmapExerciseParameters } from './mapExerciseParameters'
 import type { WorkoutExerciseRequest, WorkoutFormatType } from './ownWorkoutTypes'
@@ -60,7 +60,7 @@ export const mapOwnWorkoutResponseToDraft = (response: OwnWorkoutResponse): Work
     const stageIndex = stage.position - 1
     if (stageIndex < 0 || stageIndex >= draft.stages.length) continue
 
-    const round: SelectedExercise[] = []
+    const round: RoundExercise[] = []
     let itemKey = 1
     for (const workoutRound of stage.rounds) {
       for (const envelope of workoutRound.exercises) {
@@ -71,14 +71,14 @@ export const mapOwnWorkoutResponseToDraft = (response: OwnWorkoutResponse): Work
         round.push({
           key: String(itemKey++),
           exerciseId,
-          parameters: unmapExerciseParameters(parameters),
+          parameters: unmapExerciseParameters(parameters) ?? {},
         })
       }
     }
 
     draft.stages[stageIndex] = {
+      workoutStageId: stageIndex + 1,
       format: stage.format as WorkoutFormatType,
-      stageFormatId: stage.stageFormatId,
       params: { ...stage.params },
       round,
     }

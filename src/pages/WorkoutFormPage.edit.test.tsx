@@ -25,9 +25,8 @@ beforeEach(() => {
   patchWorkoutDraft({ datetime: new Date().toISOString(), name: 'Черновик' })
   patchWorkoutStage(WOD_STAGE_INDEX, {
     format: 'AMRAP',
-    stageFormatId: amrap.stageFormatId,
     params: defaultParamsForCatalogItem(amrap),
-    round: [{ key: '1', exerciseId: 'burpee' }],
+    round: [{ key: '1', exerciseId: 'burpee', parameters: {} }],
   })
 })
 

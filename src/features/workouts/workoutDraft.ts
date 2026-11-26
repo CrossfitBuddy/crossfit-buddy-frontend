@@ -60,7 +60,10 @@ export const replaceWorkoutDraft = (next: WorkoutDraft) => {
     stages: next.stages.map((stage) => ({
       ...stage,
       params: { ...stage.params },
-      round: stage.round.map((item) => ({ ...item, parameters: item.parameters ? { ...item.parameters } : undefined })),
+      round: stage.round.map((item) => ({
+        ...item,
+        parameters: item.parameters ? { ...item.parameters } : {},
+      })),
     })),
   }
   emit()

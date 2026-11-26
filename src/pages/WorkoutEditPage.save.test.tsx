@@ -26,15 +26,15 @@ beforeEach(() => {
     datetime: new Date().toISOString(),
     durationMinutes: 45,
     stages: [
-      { format: null, stageFormatId: null, params: {}, round: [] },
-      { format: null, stageFormatId: null, params: {}, round: [] },
+      { workoutStageId: 1, format: null, params: {}, round: [] },
+      { workoutStageId: 2, format: null, params: {}, round: [] },
       {
+        workoutStageId: WOD_STAGE_INDEX + 1,
         format: 'AMRAP',
-        stageFormatId: amrap.stageFormatId,
         params: defaultParamsForCatalogItem(amrap),
-        round: [{ key: '1', exerciseId: 'burpee' }],
+        round: [{ key: '1', exerciseId: 'burpee', parameters: {} }],
       },
-      { format: null, stageFormatId: null, params: {}, round: [] },
+      { workoutStageId: 4, format: null, params: {}, round: [] },
     ],
   })
 })
