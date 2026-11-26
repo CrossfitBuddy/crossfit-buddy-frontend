@@ -2,6 +2,7 @@ import { Dumbbell, History, House, Layers, ListChecks, UserRound, Users } from '
 import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { ExerciseCatalog } from '../features/exercises/ExerciseCatalog'
+import { AdminExerciseList } from '../features/exercises/AdminExerciseList'
 import { RoundEditorPage } from '../features/exercises/RoundEditorPage'
 import { FormatsScreen } from '../features/formats/FormatsScreen'
 import { DashboardPage } from '../pages/DashboardPage'
@@ -24,7 +25,7 @@ const allRoles: UserRole[] = ['ATHLETE', 'TRAINER', 'ADMIN']
 
 function ExercisesEntry() {
   const { activeRole } = useAuth()
-  if (activeRole === 'ADMIN') return <PlaceholderPage title="Упражнения" />
+  if (activeRole === 'ADMIN') return <AdminExerciseList />
   return <ExerciseCatalog />
 }
 
