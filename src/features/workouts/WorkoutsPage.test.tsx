@@ -20,7 +20,7 @@ const workout = {
 }
 
 function renderWorkouts(path = '/workouts') {
-  render(
+  return render(
     <QueryClientProvider client={new QueryClient()}>
       <MemoryRouter initialEntries={[path]}>
         <Routes>
@@ -84,5 +84,23 @@ it('передаёт UUID из списка в запрос подробной �
 
   expect(await screen.findByRole('heading', { name: 'Основной блок' })).toBeInTheDocument()
   expect(screen.getByText('15 мин')).toBeInTheDocument()
+  expect(get).toHaveBeenLastCalledWith(`/v1/workouts/${workout.id}`, { signal: expect.any(AbortSignal) })
+})
+
+it('позволяет открыть карточку напрямую после отказа в доступе к списку', async () => {
+  get.mockRejectedValueOnce({ isAxiosError: true, response: { status: 403 } })
+    .mockResolvedValueOnce({ data: {
+      id: workout.id, title: workout.title, durationSec: 900,
+      complexes: [{ id: 'stage', workoutStage: 'WOD', complexFormat: 'FOR_TIME', rounds: [] }],
+    } })
+
+  const list = renderWorkouts()
+  expect(await screen.findByRole('alert')).toHaveTextContent('У вас нет доступа к списку тренировок.')
+  list.unmount()
+  renderWorkouts(`/workouts/${workout.id}`)
+
+  expect(await screen.findByRole('heading', { name: 'WOD' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Fran' })).toBeInTheDocument()
+  expect(get).toHaveBeenCalledTimes(2)
   expect(get).toHaveBeenLastCalledWith(`/v1/workouts/${workout.id}`, { signal: expect.any(AbortSignal) })
 })
