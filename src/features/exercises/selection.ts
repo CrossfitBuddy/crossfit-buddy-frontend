@@ -6,6 +6,8 @@ export type SelectedExercise = {
   key: string
   exerciseId: string
   exercise?: Exercise
+  /** Значения метрик из редактора раунда (#19079). */
+  parameters?: Record<string, number>
 }
 
 export type RoundExercise = SelectedExercise & {

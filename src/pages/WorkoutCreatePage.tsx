@@ -1,8 +1,19 @@
-import { Button, DatePicker, Form, Input, InputNumber, message } from 'antd'
+import { useQueryClient } from '@tanstack/react-query'
+import { Alert, Button, DatePicker, Form, Input, InputNumber, message } from 'antd'
 import dayjs, { type Dayjs } from 'dayjs'
 import { useEffect, useState } from 'react'
-import { buildOwnWorkoutRequest } from '../features/workouts/buildOwnWorkoutRequest'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { getApiErrorStatus } from '../api/session'
+import { useAuth } from '../app/auth/useAuth'
+import { buildOwnWorkoutRequest } from '../features/workouts/buildOwnWorkoutRequest'
+import { createOwnWorkoutApi, type CreateOwnWorkoutApi } from '../features/workouts/createOwnWorkoutApi'
+import { CreateWorkoutError } from '../features/workouts/createWorkoutTypes'
+import { getCreateWorkoutErrorMessage, getCreateWorkoutFieldErrors } from '../features/workouts/createOwnWorkoutErrors'
+import {
+  formatWorkoutFieldErrors,
+  stageIndexesFromFieldErrors,
+} from '../features/workouts/workoutFieldErrorLabels'
+import { workoutsListQueryKey } from '../features/workouts/workoutsQueryKeys'
 import { loadRoundIntoSelection } from '../features/exercises/selection'
 import { beginRoundForStage, consumeWorkoutCreateScrollStage } from '../features/workouts/roundFlow'
 import { scrollToWorkoutStage } from '../features/workouts/scrollToWorkoutStage'
@@ -13,6 +24,7 @@ import {
   WORKOUT_STAGE_TITLES,
   getWorkoutDraft,
   patchWorkoutDraft,
+  resetWorkoutDraft,
   useWorkoutDraft,
 } from '../features/workouts/workoutDraft'
 
@@ -27,13 +39,21 @@ type WorkoutCreateLocationState = {
   scrollToStage?: number
 }
 
-export function WorkoutCreatePage() {
+type WorkoutCreatePageProps = {
+  createApi?: CreateOwnWorkoutApi
+}
+
+export function WorkoutCreatePage({ createApi = createOwnWorkoutApi }: WorkoutCreatePageProps) {
   const navigate = useNavigate()
   const location = useLocation()
+  const queryClient = useQueryClient()
+  const { signOut } = useAuth()
   const draft = useWorkoutDraft()
   const [form] = Form.useForm<HeaderFields>()
   const [showParamErrors, setShowParamErrors] = useState(false)
-  const canSave = canSaveWorkoutDraft(draft)
+  const [serverFieldIssues, setServerFieldIssues] = useState<string[]>([])
+  const [saving, setSaving] = useState(false)
+  const canSave = canSaveWorkoutDraft(draft) && !saving
 
   useEffect(() => {
     if (!getWorkoutDraft().datetime) {
@@ -78,7 +98,8 @@ export function WorkoutCreatePage() {
     })
   }
 
-  const onSave = () => {
+  const onSave = async () => {
+    if (saving) return
     onHeaderChange()
     const current = getWorkoutDraft()
     const result = validateWorkoutDraft(current)
@@ -93,7 +114,33 @@ export function WorkoutCreatePage() {
       return
     }
     setShowParamErrors(false)
-    message.success('Данные готовы к отправке. API — в задаче CB-18982')
+    setServerFieldIssues([])
+    setSaving(true)
+    try {
+      const { id } = await createApi.createOwnWorkout(request)
+      await queryClient.invalidateQueries({ queryKey: workoutsListQueryKey })
+      resetWorkoutDraft()
+      message.success('Тренировка создана')
+      navigate(`/workouts/${id}`, { replace: true })
+    } catch (error) {
+      const status = error instanceof CreateWorkoutError ? error.status : getApiErrorStatus(error)
+      if (status === 401) {
+        signOut()
+        return
+      }
+      const fieldErrors = getCreateWorkoutFieldErrors(error)
+      if (fieldErrors.length > 0) {
+        setServerFieldIssues(formatWorkoutFieldErrors(fieldErrors))
+        setShowParamErrors(true)
+        const firstStage = stageIndexesFromFieldErrors(fieldErrors)[0]
+        if (firstStage !== undefined) {
+          requestAnimationFrame(() => scrollToWorkoutStage(firstStage))
+        }
+      }
+      message.error(getCreateWorkoutErrorMessage(error))
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -104,6 +151,20 @@ export function WorkoutCreatePage() {
       </header>
 
       <div className="flex flex-col gap-5 p-6">
+        {serverFieldIssues.length > 0 ? (
+          <div role="alert">
+            <Alert
+              type="error"
+              showIcon
+              title="Исправьте данные тренировки"
+              description={(
+                <ul className="mt-2 list-disc space-y-1 pl-5">
+                  {serverFieldIssues.map((line) => <li key={line}>{line}</li>)}
+                </ul>
+              )}
+            />
+          </div>
+        ) : null}
         <section className="workout-create-header-card" aria-labelledby="workout-header">
           <h2 id="workout-header" className="sr-only">
             Параметры тренировки
@@ -154,16 +215,14 @@ export function WorkoutCreatePage() {
             showParamErrors={showParamErrors}
           />
         ))}
-        <Button type="primary" block size="large" disabled={!canSave} onClick={onSave}>
+        <Button type="primary" block size="large" disabled={!canSave} loading={saving} onClick={() => void onSave()}>
           Сохранить
         </Button>
-        {!canSave ? (
+        {!canSaveWorkoutDraft(draft) && !saving ? (
           <p className="text-center text-sm text-stone-500">
             Заполните дату и этап WOD: формат, параметры и раунд
           </p>
-        ) : (
-          <p className="text-center text-sm text-stone-500">Отправка на сервер — в задаче CB-18982</p>
-        )}
+        ) : null}
       </div>
     </div>
   )
