@@ -1,8 +1,11 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, expect, it } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { ExerciseCatalog } from '../exercises/ExerciseCatalog'
+import { mockCatalogApi } from '../exercises/mockCatalogApi'
+import { resetCatalogSearch } from '../exercises/catalogSearch'
 import { RoundRoute } from '../exercises/RoundRoute'
 import { resetSelection } from '../exercises/selection'
 import { WorkoutCreatePage } from '../../pages/WorkoutCreatePage'
@@ -12,17 +15,21 @@ import { getWorkoutDraft, patchWorkoutDraft, patchWorkoutStage, resetWorkoutDraf
 beforeEach(() => {
   resetWorkoutDraft()
   resetSelection()
+  resetCatalogSearch()
 })
 
 function renderCreateFlow(path = '/workouts/new') {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
   render(
-    <MemoryRouter initialEntries={[path]}>
-      <Routes>
-        <Route path="/workouts/new" element={<WorkoutCreatePage />} />
-        <Route path="/exercises" element={<ExerciseCatalog />} />
-        <Route path="/round" element={<RoundRoute />} />
-      </Routes>
-    </MemoryRouter>,
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={[path]}>
+        <Routes>
+          <Route path="/workouts/new" element={<WorkoutCreatePage />} />
+          <Route path="/exercises" element={<ExerciseCatalog api={mockCatalogApi} />} />
+          <Route path="/round" element={<RoundRoute />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
   )
 }
 
