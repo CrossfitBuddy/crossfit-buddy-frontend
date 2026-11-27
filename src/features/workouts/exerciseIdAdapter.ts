@@ -24,3 +24,10 @@ export const catalogExerciseIdToUuid = (exerciseId: string): string | null => {
   if (UUID_RE.test(exerciseId)) return exerciseId
   return MOCK_EXERCISE_UUID[exerciseId] ?? null
 }
+
+const UUID_TO_CATALOG = Object.fromEntries(
+  Object.entries(MOCK_EXERCISE_UUID).map(([catalogId, uuid]) => [uuid.toLowerCase(), catalogId]),
+) as Record<string, string>
+
+export const catalogUuidToExerciseId = (exerciseUuid: string): string | null =>
+  UUID_TO_CATALOG[exerciseUuid.toLowerCase()] ?? null

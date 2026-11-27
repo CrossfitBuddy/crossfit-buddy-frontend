@@ -54,6 +54,21 @@ export const resetWorkoutDraft = () => {
   emit()
 }
 
+export const replaceWorkoutDraft = (next: WorkoutDraft) => {
+  draft = {
+    ...next,
+    stages: next.stages.map((stage) => ({
+      ...stage,
+      params: { ...stage.params },
+      round: stage.round.map((item) => ({
+        ...item,
+        parameters: item.parameters ? { ...item.parameters } : {},
+      })),
+    })),
+  }
+  emit()
+}
+
 export const patchWorkoutDraft = (patch: Partial<Omit<WorkoutDraft, 'stages'>>) => {
   draft = { ...draft, ...patch }
   emit()
