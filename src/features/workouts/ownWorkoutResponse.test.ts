@@ -10,12 +10,12 @@ it('маппит ответ API в черновик по position этапа', (
     name: 'WOD',
     description: null,
     datetime: '2026-11-19T10:00:00.000Z',
-    durationMinutes: 60,
+    durationSeconds: 3600,
     stages: [{
       position: 3,
-      stageFormatId: 1,
+      workoutStageId: 3,
       format: 'AMRAP',
-      params: { duration: 12 },
+      timeLimitSeconds: 720,
       rounds: [{
         repeatCount: 1,
         exercises: [{
@@ -31,6 +31,7 @@ it('маппит ответ API в черновик по position этапа', (
   expect(draft.name).toBe('WOD')
   expect(draft.durationMinutes).toBe(60)
   expect(draft.stages[2].format).toBe('AMRAP')
+  expect(draft.stages[2].params.duration).toBe(12)
   expect(draft.stages[2].round).toEqual([{
     key: '1',
     exerciseId: 'burpee',
@@ -44,7 +45,7 @@ it('replaceWorkoutDraft обновляет подписчиков', () => {
     name: 'После замены',
     description: '',
     datetime: '2026-11-19T12:00:00.000Z',
-    durationMinutes: null,
+    durationSeconds: null,
     stages: [],
   })
   replaceWorkoutDraft(next)

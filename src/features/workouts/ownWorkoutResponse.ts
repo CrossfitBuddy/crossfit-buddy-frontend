@@ -1,18 +1,20 @@
 import { z } from 'zod'
+import { formatTypes } from '../formats/types'
+import type { FormatType } from '../formats/types'
 import type { RoundExercise } from '../exercises/selection'
 import { catalogUuidToExerciseId } from './exerciseIdAdapter'
 import { unmapExerciseParameters } from './mapExerciseParameters'
 import type { WorkoutExerciseRequest, WorkoutFormatType } from './ownWorkoutTypes'
 import { createEmptyWorkoutDraft, type WorkoutDraft } from './workoutDraft'
 
-const workoutFormatSchema = z.enum(['AMRAP', 'FOR_TIME', 'EMOM', 'TABATA'])
+const workoutFormatSchema = z.enum(formatTypes)
 
 const workoutExerciseSchema = z.object({
   exerciseId: z.uuid(),
   repetitions: z.number().optional(),
   weightKg: z.number().optional(),
   distanceMeters: z.number().optional(),
-  durationMinutes: z.number().optional(),
+  durationSeconds: z.number().optional(),
 })
 
 const workoutExerciseEnvelopeSchema = z.union([
@@ -27,9 +29,11 @@ const workoutRoundSchema = z.object({
 
 const workoutStageSchema = z.object({
   position: z.number().int().positive(),
-  stageFormatId: z.number().int().positive(),
+  workoutStageId: z.number().int().positive(),
   format: workoutFormatSchema,
-  params: z.record(z.string(), z.number()),
+  timeLimitSeconds: z.number().int().positive().optional(),
+  intervalSeconds: z.number().int().positive().optional(),
+  targetRounds: z.number().int().positive().optional(),
   rounds: z.array(workoutRoundSchema),
 })
 
@@ -38,11 +42,34 @@ export const ownWorkoutResponseSchema = z.object({
   name: z.string().nullish(),
   description: z.string().nullish(),
   datetime: z.string(),
-  durationMinutes: z.number().nullish(),
+  durationSeconds: z.number().int().positive().nullish(),
   stages: z.array(workoutStageSchema),
 })
 
 export type OwnWorkoutResponse = z.infer<typeof ownWorkoutResponseSchema>
+
+const secondsToMinutes = (seconds: number) => seconds / 60
+
+const stageParamsFromResponse = (format: FormatType, stage: z.infer<typeof workoutStageSchema>): Record<string, number> => {
+  switch (format) {
+    case 'AMRAP':
+      return typeof stage.timeLimitSeconds === 'number'
+        ? { duration: secondsToMinutes(stage.timeLimitSeconds) }
+        : {}
+    case 'EMOM': {
+      const params: Record<string, number> = {}
+      if (typeof stage.timeLimitSeconds === 'number') params.duration = secondsToMinutes(stage.timeLimitSeconds)
+      if (typeof stage.intervalSeconds === 'number') params.interval = secondsToMinutes(stage.intervalSeconds)
+      return params
+    }
+    case 'FOR_TIME':
+      return typeof stage.targetRounds === 'number' ? { targetRounds: stage.targetRounds } : {}
+    case 'FREE':
+      return {}
+    default:
+      return {}
+  }
+}
 
 const exerciseFromEnvelope = (entry: z.infer<typeof workoutExerciseEnvelopeSchema>): WorkoutExerciseRequest | null => {
   if ('parameters' in entry) return entry.parameters
@@ -54,7 +81,10 @@ export const mapOwnWorkoutResponseToDraft = (response: OwnWorkoutResponse): Work
   draft.name = response.name?.trim() ?? ''
   draft.description = response.description?.trim() ?? ''
   draft.datetime = response.datetime
-  draft.durationMinutes = response.durationMinutes ?? null
+  draft.durationMinutes =
+    typeof response.durationSeconds === 'number' && response.durationSeconds > 0
+      ? secondsToMinutes(response.durationSeconds)
+      : null
 
   for (const stage of response.stages) {
     const stageIndex = stage.position - 1
@@ -76,10 +106,11 @@ export const mapOwnWorkoutResponseToDraft = (response: OwnWorkoutResponse): Work
       }
     }
 
+    const format = stage.format as WorkoutFormatType
     draft.stages[stageIndex] = {
-      workoutStageId: stageIndex + 1,
-      format: stage.format as WorkoutFormatType,
-      params: { ...stage.params },
+      workoutStageId: stage.workoutStageId,
+      format,
+      params: stageParamsFromResponse(stage.format, stage),
       round,
     }
   }

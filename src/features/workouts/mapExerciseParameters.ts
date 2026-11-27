@@ -13,7 +13,7 @@ const METRIC_TO_REQUEST: Record<string, keyof WorkoutExerciseRequest> = {
 const REQUEST_TO_METRIC: Partial<Record<keyof WorkoutExerciseRequest, string>> = {
   repetitions: 'repetitions',
   weightKg: 'weightKg',
-  durationMinutes: 'duration',
+  durationSeconds: 'durationSeconds',
   distanceMeters: 'distance',
 }
 
