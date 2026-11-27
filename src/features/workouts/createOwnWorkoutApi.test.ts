@@ -9,11 +9,11 @@ const sampleRequest: OwnWorkoutRequest = {
   name: 'Утро',
   description: null,
   datetime: '2026-11-19T10:00:00+07:00',
-  durationMinutes: 60,
+  durationSeconds: 3600,
   stages: [{
-    stageFormatId: 1,
+    workoutStageId: 1,
     format: 'AMRAP',
-    params: { duration: 12 },
+    timeLimitSeconds: 720,
     rounds: [{ repeatCount: 1, exercises: [{ exerciseId: '2dd94fa9-1763-4986-82a5-6752d0a3da96' }] }],
   }],
 }

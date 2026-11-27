@@ -4,7 +4,7 @@ const FIELD_LABELS: Record<string, string> = {
   name: 'Название',
   description: 'Описание',
   datetime: 'Дата и время',
-  durationMinutes: 'Длительность',
+  durationSeconds: 'Длительность',
 }
 
 export function labelWorkoutField(path: string): string {
@@ -14,6 +14,9 @@ export function labelWorkoutField(path: string): string {
     const index = Number(stage[1])
     const titles = ['Разминка', 'Сила и навык', 'WOD', 'Заминка']
     const base = titles[index] ?? `Этап ${index + 1}`
+    if (path.includes('timeLimitSeconds')) return `${base}: длительность`
+    if (path.includes('intervalSeconds')) return `${base}: интервал`
+    if (path.includes('targetRounds')) return `${base}: раунды`
     if (path.includes('.params.')) {
       const param = path.split('.params.')[1]?.split(']')[0]
       if (param === 'duration') return `${base}: длительность`

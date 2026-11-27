@@ -86,7 +86,7 @@ it('показывает ошибки полей с бэка без сброса
   const user = userEvent.setup()
   const { CreateWorkoutError } = await import('./createWorkoutTypes')
   createOwnWorkout.mockRejectedValueOnce(new CreateWorkoutError(400, 'Некорректные данные', 'VALIDATION_ERROR', [{
-    field: 'stages[2].params.duration',
+    field: 'stages[2].timeLimitSeconds',
     code: 'REQUIRED_PARAMETER',
     message: 'Нужна длительность',
   }]))

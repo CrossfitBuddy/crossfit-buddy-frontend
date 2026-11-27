@@ -4,8 +4,8 @@ const METRIC_TO_REQUEST: Record<string, keyof WorkoutExerciseRequest> = {
   repetitions: 'repetitions',
   weightKg: 'weightKg',
   weight: 'weightKg',
-  duration: 'durationMinutes',
-  durationMinutes: 'durationMinutes',
+  duration: 'durationSeconds',
+  durationSeconds: 'durationSeconds',
   distance: 'distanceMeters',
   distanceMeters: 'distanceMeters',
 }
